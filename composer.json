@@ -1,0 +1,26 @@
+{
+    "name": "wh1tew0lf/SQLBuilder",
+    "description": "Classes for generate SQL queries (select/insert/update/delete) on different platforms (MySQL, MS SQL)",
+    "keywords": ["php", "sql", "code generation", "sql builder"],
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Danil Volkov"
+        }
+    ],
+    "require": {
+        "php": ">=5.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.7.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "obfuscationTest\\": "test/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

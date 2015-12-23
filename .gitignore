@@ -1,0 +1,9 @@
+# Created by .ignore support plugin (hsz.mobi)
+/idea/
+/.idea/
+/nbproject/
+*local*
+
+# composer vendor dir
+/vendor
+composer.lock
