@@ -2,6 +2,7 @@
 /idea/
 /.idea/
 /nbproject/
+/output/
 *local*
 
 # composer vendor dir
