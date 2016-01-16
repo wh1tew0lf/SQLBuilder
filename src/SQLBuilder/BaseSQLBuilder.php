@@ -660,7 +660,7 @@ class BaseSQLBuilder
         } elseif (is_bool($where)) {
             $where = $where ? 'TRUE' : 'FALSE';
         } elseif (is_array($where)) {
-            if (isset($where[0], $operators[strtoupper($where[0])])) {
+            if (isset($where[0]) && is_string($where[0]) && isset($operators[strtoupper($where[0])])) {
                 $operator = strtoupper($where[0]);
                 unset($where[0]);
             } elseif ($first) {
@@ -687,7 +687,7 @@ class BaseSQLBuilder
                 if (('IN' == $operator) && empty($operand2)) {
                     return '1=0';
                 } elseif (('LIKE' == $operator) && !strstr($operand2, '%')) {
-                    $operand2 = "'%{$operand2}%'";
+                    return $this->genWhere($operand1) . " $operator '%{$operand2}%'" ;
                 }
 
                 return $this->genWhere($operand1) . " $operator " . $this->genWhere($operand2);
