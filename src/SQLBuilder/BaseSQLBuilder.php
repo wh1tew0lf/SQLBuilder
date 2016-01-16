@@ -30,6 +30,13 @@ class BaseSQLBuilder
     protected $_query = [];
 
     /**
+     * Count of tabs before sql
+     * @var int
+     * @since 1.0
+     */
+    protected $_level = 0;
+
+    /**
      * @var array List of lists of sql operators, key in main list mean count of operands.
      * @since 1.0
      * For example: "=" and key 2 mean that there are two operands, 3 mean many (>= 1)
@@ -564,7 +571,7 @@ class BaseSQLBuilder
                         $select[] = "{$tableAlias}.{$fieldName}{$fieldAlias}";
                     }
                 } elseif ($expression instanceof static) {
-                    $subQuery = $expression->getSQL();
+                    $subQuery = $expression->getSQL($this->_level);
                     //todo what if subQuery use some table or field of query?
                     /*if (isset($this->_query['from']['alias'])) {
                         $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
@@ -576,7 +583,7 @@ class BaseSQLBuilder
                         $alias = '';
                     }
 
-                    $select[] = "({$subQuery}){$alias}";
+                    $select[] = "(\n{$subQuery}){$alias}";
 
                 } else {
                     $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
@@ -602,7 +609,7 @@ class BaseSQLBuilder
             foreach ($this->_query['from'] as $ind => $fromStmt) {
                 $alias = $this->_w($fromStmt['alias']);
                 if ($fromStmt['table'] instanceof static) {
-                    $from[] = '(' . $fromStmt['table']->getSQL() . ") AS {$alias}";
+                    $from[] = "(\n" . $fromStmt['table']->getSQL($this->_level) . ") AS {$alias}";
                 } elseif ($fromStmt['table'] instanceof BaseExpression) {
                     $from[] = '(' . $fromStmt['table'] . ") AS {$alias}";
                 } else {
@@ -654,7 +661,7 @@ class BaseSQLBuilder
     public function genWhere($where, $first = false) {
         $operators = static::getOperators();
         if ($where instanceof static) {
-            $where = '(' . $where->getSQL() . ')';
+            $where = "(\n" . $where->getSQL($this->_level) . ')';
         } elseif (is_null($where)) {
             $where = 'NULL';
         } elseif (is_bool($where)) {
@@ -701,7 +708,7 @@ class BaseSQLBuilder
                     } else {
                         //todo Is it achievable position
                         die('Yes this position is achievable');
-                        $parts[] = $this->genWhere($v);
+                        //$parts[] = $this->genWhere($v);
                     }
                 }
                 return '(' . implode(" \n\t$operator ", $parts) . ')';
@@ -718,13 +725,13 @@ class BaseSQLBuilder
         $group = [];
         foreach($this->_query['group'] as $expression) {
             if ($expression instanceof static) {
-                $subQuery = $expression->getSQL();
+                $subQuery = $expression->getSQL($this->_level);
                 //todo what if subQuery use some table or field of query?
                 /*if (isset($this->_query['from']['alias'])) {
                     $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
                 }*/
 
-                $group[] = "({$subQuery})";
+                $group[] = "(\n{$subQuery})";
 
             } else {
                 $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
@@ -742,13 +749,13 @@ class BaseSQLBuilder
         $order = [];
         foreach($this->_query['order'] as $expression) {
             if ($expression instanceof static) {
-                $subQuery = $expression->getSQL();
+                $subQuery = $expression->getSQL($this->_level);
                 //todo what if subQuery use some table or field of query?
                 /*if (isset($this->_query['from']['alias'])) {
                     $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
                 }*/
 
-                $order[] = "({$subQuery})";
+                $order[] = "(\n{$subQuery})";
 
             } elseif(is_array($expression) || (is_string($expression) && strstr($expression, ' '))) {
                 $expression = is_string($expression) ? explode(' ', $expression) : $expression;
@@ -773,16 +780,18 @@ class BaseSQLBuilder
 
     /**
      * Dummy method
+     * @param int $level Count of tabs at left side
      * @return string
      */
-    public function getSQL($level = 1) {
+    public function getSQL($level = 0) {
+        $this->_level = 1 + $level;
         $leftOffset = str_pad('', $level, "\t");
-        return $leftOffset . 'SELECT ' . $this->genSelect() . "\n" .
-            $leftOffset . 'FROM ' . $this->genFrom() . "\n" .
-            $leftOffset . $this->genJoin() . "\n" .
-            (!empty($this->_query['where']) ? ($leftOffset . 'WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') .
-            (!empty($this->_query['group']) ? ($leftOffset . 'GROUP BY ' . $this->genGroupBy() . "\n") : '') .
-            (!empty($this->_query['having']) ? ($leftOffset . 'HAVING ' . $this->genHaving() . "\n") : '') .
-            (!empty($this->_query['order']) ? ($leftOffset . 'ORDER BY ' . $this->genOrderBy() . "\n") : '');
+        return $leftOffset . str_replace("\n", "\n{$leftOffset}",'SELECT ' . $this->genSelect() . "\n" .
+        'FROM ' . $this->genFrom() . "\n" .
+            $this->genJoin() . "\n" .
+            (!empty($this->_query['where']) ? ('WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') .
+            (!empty($this->_query['group']) ? ('GROUP BY ' . $this->genGroupBy() . "\n") : '') .
+            (!empty($this->_query['having']) ? ('HAVING ' . $this->genHaving() . "\n") : '') .
+            (!empty($this->_query['order']) ? ('ORDER BY ' . $this->genOrderBy() . "\n") : ''));
     }
 }
