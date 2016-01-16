@@ -35,12 +35,16 @@ class BaseSQLBuilder
      * For example: "=" and key 2 mean that there are two operands, 3 mean many (>= 1)
      */
     protected static $_operators = [
+        0 => [
+            'is null',
+            'is not null',
+        ],
         1 => [
             'not',
             'exists',
+            'not exists',
         ],
         2 => [
-            'is',
             '=',
             '!=',
             '<>',
@@ -49,7 +53,7 @@ class BaseSQLBuilder
             '>=',
             '<=',
             'like',
-            'in'
+            'in',
         ],
         3 => [
             'and',
@@ -61,13 +65,13 @@ class BaseSQLBuilder
      * @var string Front Escape Character
      * @since 1.0
      */
-    protected static $_fec = '}';
+    protected static $_bec = '{';
 
     /**
      * @var string Front Escape Character
      * @since 1.0
      */
-    protected static $_bec = '{';
+    protected static $_fec = '}';
 
     /**
      * Clear object state for new query
@@ -406,7 +410,7 @@ class BaseSQLBuilder
                         $select[] = "{$tableAlias}.{$fieldName}{$fieldAlias}";
                     }
                 } elseif ($expression instanceof static) {
-                    $subQuery = $expression->buildQuery();
+                    $subQuery = $expression->getSQL();
                     //todo what if subQuery use some table or field of query?
                     /*if (isset($this->_query['from']['alias'])) {
                         $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
@@ -444,7 +448,7 @@ class BaseSQLBuilder
             foreach ($this->_query['from'] as $ind => $fromStmt) {
                 $alias = $this->_w($fromStmt['alias']);
                 if ($fromStmt['table'] instanceof static) {
-                    $from[] = '(' . $fromStmt['table']->buildQuery() . ") AS {$alias}";
+                    $from[] = '(' . $fromStmt['table']->getSQL() . ") AS {$alias}";
                 } elseif ($fromStmt['table'] instanceof BaseExpression) {
                     $from[] = '(' . $fromStmt['table'] . ") AS {$alias}";
                 } else {
@@ -458,11 +462,104 @@ class BaseSQLBuilder
     }
 
     public function genJoins() {
-        return '';
+        $query = '';
+        /*if (isset($this->_query['join'])) {
+            foreach($this->_query['join'] as $join) {
+                $table = $this->_e($join['table']);
+                $query .= "\n" . strtoupper($join['type']) . " JOIN {$table} ";
+                if (is_null($join['alias'])) {
+                    $alias = "{$this->_prefix}{$aliasI}";
+                    ++$aliasI;
+                } else {
+                    $alias = $join['alias'];
+                }
+
+                $tables[$alias] = $join['table'];
+                $on = $this->_buildWhere($join['on'], $this->_query['from']['alias']);
+                $query .= $this->_e($alias) . " ON {$on}";
+            }
+        }*/
+
+        return $query;
     }
 
-    public function genWhere() {
-        return '';
+    /**
+     * Returns array of operators
+     * @return array
+     */
+    public static function getOperators() {
+        $result = array();
+        foreach (self::$_operators as $place => $operators) {
+            foreach ($operators as $name) {
+                $result[strtoupper($name)] = $place;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Generate WHERE clause, recursive
+     * @param mixed $where
+     * @param bool|false $first
+     * @return array|string
+     * @throws \Exception
+     */
+    public function genWhere($where, $first = false) {
+        $operators = self::getOperators();
+        if ($where instanceof static) {
+            $where = '(' . $where->getSQL() . ')';
+        } elseif (is_null($where)) {
+            $where = 'NULL';
+        } elseif (is_bool($where)) {
+            $where = $where ? 'TRUE' : 'FALSE';
+        } elseif (is_array($where)) {
+            if (isset($where[0], $operators[strtoupper($where[0])])) {
+                $operator = strtoupper($where[0]);
+                unset($where[0]);
+            } elseif ($first) {
+                $operator = (1 == count($where)) ? '=' : 'AND'; // A => B
+            } else { //IN array()
+                return '(' . implode(', ', $where) . ')';
+            }
+
+            if (0 == $operators[$operator]) {
+                return $this->genWhere($where[1]) . " {$operator}";
+            } elseif (1 == $operators[$operator]) {
+                return "{$operator} "  . $this->genWhere($where[1]);
+            } elseif ((2 == $operators[$operator])) {
+                if (2 == count($where)) {
+                    $operand1 = reset($where);
+                    $operand2 = end($where);
+                } elseif (1 == count($where)) {
+                    $operand1 = key($where);
+                    $operand2 = reset($where);
+                } else {
+                    throw new \Exception('Invalid operands count!');
+                }
+
+                if (('IN' == $operator) && empty($operand2)) {
+                    return '1=0';
+                } elseif (('LIKE' == $operator) && !strstr($operand2, '%')) {
+                    $operand2 = "'%{$operand2}%'";
+                }
+
+                return $this->genWhere($operand1) . " $operator " . $this->genWhere($operand2);
+            } else {
+                $parts = array();
+                foreach ($where as $k => $v) {
+                    if (is_array($v)) {
+                        $parts[] = $this->genWhere($v);
+                    } elseif (is_string($k) && !is_numeric($k)) {
+                        $parts[] = $this->genWhere($k) . " = " . $this->genWhere($v);
+                    } else {
+                        die('here');
+                        $parts[] = $this->genWhere($v);
+                    }
+                }
+                return '(' . implode(" \n\t$operator ", $parts) . ')';
+            }
+        }
+        return $where;
     }
 
     public function genGroupBy() {
@@ -481,13 +578,14 @@ class BaseSQLBuilder
      * Dummy method
      * @return string
      */
-    public function buildQuery() {
-        return 'SELECT ' . $this->genSelect() . "\n" .
-            'FROM ' . $this->genFrom() . "\n" .
+    public function getSQL($level = 1) {
+        $leftOffset = ''; //str_pad('', $level, "\t");
+        return $leftOffset . 'SELECT ' . $this->genSelect() . "\n" .
+            $leftOffset . 'FROM ' . $this->genFrom() . "\n" .
             //$this->genJoins() . "\n" .
-            'WHERE ' . $this->genWhere() . "\n" /*.
-            'GROUP BY ' . $this->genGroupBy() . "\n" .
-            'ORDER BY ' . $this->genOrderBy() . "\n" .
-            'HAVING ' . $this->genHaving() . "\n"*/;
+            (!empty($this->_query['where']) ? ($leftOffset . 'WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') /*.
+            $leftOffset . 'GROUP BY ' . $this->genGroupBy() . "\n" .
+            $leftOffset . 'ORDER BY ' . $this->genOrderBy() . "\n" .
+            $leftOffset . 'HAVING ' . $this->genHaving() . "\n"*/;
     }
 }
