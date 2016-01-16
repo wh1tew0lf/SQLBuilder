@@ -152,23 +152,26 @@ class BaseSQLBuilder
      * @param array|string|self $tableName Array can contain
      * [0] == table, [1] == alias
      * [table] == table, [alias] == alias
-     * @param string|null $alias
+     * @param string $defaultAlias
      * @return array
      */
-    protected function _getTable($tableName, $alias = null) {
-        if (is_null($alias)) {
-            if (is_string($tableName) && strstr($tableName, ' ')) {
-                $parts = explode(' ', $tableName);
-                $tableName = $parts[0];
-                $alias = $parts[1];
-            } elseif (is_array($tableName)) {
-                $alias = isset($tableName['alias']) ? $tableName['alias'] : $alias;
-                $alias = isset($tableName[1]) ? $tableName[1] : $alias;
-                $tableName = isset($tableName['table']) ? $tableName['table'] : $tableName;
-                $tableName = isset($tableName[0]) ? $tableName[0] : $tableName;
-            }
+    protected function _getTable($tableName, $defaultAlias) {
+        if (is_string($tableName) && strstr($tableName, ' ')) {
+            $parts = explode(' ', $tableName);
+            $tableName = reset($parts);
+            $alias = end($parts);
+        } elseif (is_string($tableName) && is_numeric($defaultAlias)) {
+            $alias = $tableName;
+        } elseif (is_array($tableName) && (2 == count($tableName))) {
+            $alias = isset($tableName['alias']) ? $tableName['alias'] : $defaultAlias;
+            $alias = isset($tableName[1]) ? $tableName[1] : $alias;
+            $tableName = isset($tableName['table']) ? $tableName['table'] : $tableName;
+            $tableName = isset($tableName[0]) ? $tableName[0] : $tableName;
+        } elseif (is_array($tableName) && (1 == count($tableName))) {
+            $alias = key($tableName);
+            $tableName = reset($tableName);
         }
-        return ['table' => $tableName, 'alias' => $alias ? $alias : null];
+        return ['table' => $tableName, 'alias' => !empty($alias) ? $alias : $defaultAlias];
     }
 
     /**
@@ -180,7 +183,21 @@ class BaseSQLBuilder
      * @return self
      */
     public function from($tableName, $alias = null) {
-        $this->_query['from'] = $this->_getTable($tableName, $alias);
+        $this->_query['from'] = [$this->_getTable($tableName, null === $alias ? 0 : $alias)];
+        return $this;
+    }
+
+    /**
+     * Add one more from statement to stored statements
+     * @see \SQLBuilder\BaseSQLBuilder::_getTable For $tableName see getTable method
+     * @since 1.0
+     * @param array|string|self
+     * @param string|null $alias
+     * @return self
+     */
+    public function addFrom($tableName, $alias = null) {
+        $defaultAlias = !empty($this->_query['from']) ? count($this->_query['from']) : 0;
+        $this->_query['from'][] = $this->_getTable($tableName, null === $alias ? $defaultAlias : $alias);
         return $this;
     }
 
@@ -336,6 +353,18 @@ class BaseSQLBuilder
     }
 
     /**
+     * Sets having param state
+     * @param string|array $fields
+     * @param string $delimiter
+     * @return self
+     */
+    public function having($fields, $delimiter = ',') {
+        $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
+        $this->_query['order'] = $fields;
+        return $this;
+    }
+
+    /**
      * Escape
      * @param array|string $str
      * @return string
@@ -406,10 +435,59 @@ class BaseSQLBuilder
     }
 
     /**
+     * Generates string for FROM
+     * @return string
+     */
+    public function genFrom() {
+        $from = [];
+        if (!empty($this->_query['from'])) {
+            foreach ($this->_query['from'] as $ind => $fromStmt) {
+                $alias = $this->_w($fromStmt['alias']);
+                if ($fromStmt['table'] instanceof static) {
+                    $from[] = '(' . $fromStmt['table']->buildQuery() . ") AS {$alias}";
+                } elseif ($fromStmt['table'] instanceof BaseExpression) {
+                    $from[] = '(' . $fromStmt['table'] . ") AS {$alias}";
+                } else {
+                    $table = $this->_w($fromStmt['table']);
+                    $from[] = ($table != $alias) ? "{$table} AS {$alias}" : $table;
+                }
+            }
+        }
+
+        return implode(",\n", $from);
+    }
+
+    public function genJoins() {
+        return '';
+    }
+
+    public function genWhere() {
+        return '';
+    }
+
+    public function genGroupBy() {
+        return '';
+    }
+
+    public function genOrderBy() {
+        return '';
+    }
+
+    public function genHaving() {
+        return '';
+    }
+
+    /**
      * Dummy method
      * @return string
      */
     public function buildQuery() {
-        return 'SELECT ' . $this->genSelect();
+        return 'SELECT ' . $this->genSelect() . "\n" .
+            'FROM ' . $this->genFrom() . "\n" .
+            //$this->genJoins() . "\n" .
+            'WHERE ' . $this->genWhere() . "\n" /*.
+            'GROUP BY ' . $this->genGroupBy() . "\n" .
+            'ORDER BY ' . $this->genOrderBy() . "\n" .
+            'HAVING ' . $this->genHaving() . "\n"*/;
     }
 }
