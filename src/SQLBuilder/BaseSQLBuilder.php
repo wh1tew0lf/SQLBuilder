@@ -76,7 +76,7 @@ class BaseSQLBuilder
     /**
      * Clear object state for new query
      * @since 1.0
-     * @return self
+     * @return static
      */
     public function startQuery()
     {
@@ -91,7 +91,7 @@ class BaseSQLBuilder
      */
     public static function start()
     {
-        $instance = new self;
+        $instance = new static;
         return $instance->startQuery();
     }
 
@@ -100,7 +100,7 @@ class BaseSQLBuilder
      * @since 1.0
      * @param string|array $fields
      * @param string $delimiter If fields is string delimiter for this string
-     * @return self
+     * @return static
      */
     public function select($fields, $delimiter = ',')
     {
@@ -129,7 +129,7 @@ class BaseSQLBuilder
      * @param string|array $fields
      * @param string $delimiter If fields is string delimiter for this string
      * @throws \Exception
-     * @return self
+     * @return static
      */
     public function addSelect($fields, $delimiter = ',')
     {
@@ -153,7 +153,7 @@ class BaseSQLBuilder
     /**
      * Parse input for from and joins
      * @since 1.0
-     * @param array|string|self $tableName Array can contain
+     * @param array|string|static $tableName Array can contain
      * [0] == table, [1] == alias
      * [table] == table, [alias] == alias
      * @param string $defaultAlias
@@ -182,9 +182,9 @@ class BaseSQLBuilder
      * Store from statement
      * @see \SQLBuilder\BaseSQLBuilder::_getTable For $tableName see getTable method
      * @since 1.0
-     * @param array|string|self
+     * @param array|string|static
      * @param string|null $alias
-     * @return self
+     * @return static
      */
     public function from($tableName, $alias = null) {
         $this->_query['from'] = [$this->_getTable($tableName, null === $alias ? 0 : $alias)];
@@ -195,9 +195,9 @@ class BaseSQLBuilder
      * Add one more from statement to stored statements
      * @see \SQLBuilder\BaseSQLBuilder::_getTable For $tableName see getTable method
      * @since 1.0
-     * @param array|string|self
+     * @param array|string|static
      * @param string|null $alias
-     * @return self
+     * @return static
      */
     public function addFrom($tableName, $alias = null) {
         $defaultAlias = !empty($this->_query['from']) ? count($this->_query['from']) : 0;
@@ -213,10 +213,12 @@ class BaseSQLBuilder
      * @param string|array $on
      * @param string|null $alias
      * @param string $type left|right|inner|cross
-     * @return self
+     * @return static
      */
     public function join($tableName, $on, $alias = null, $type = 'left') {
-        $params = $this->_getTable($tableName, $alias);
+        $defaultAlias = !empty($this->_query['from']) ? count($this->_query['from']) : 0;
+        $defaultAlias += !empty($this->_query['join']) ? count($this->_query['join']) : 0;
+        $params = $this->_getTable($tableName, null === $alias ? $defaultAlias : $alias);
 
         $this->_query['join'][] = [
             'table' => $params['table'],
@@ -236,7 +238,7 @@ class BaseSQLBuilder
      * @param array|string $tableName
      * @param string|array $on
      * @param string|null $alias
-     * @return self
+     * @return static
      */
     public function innerJoin($tableName, $on, $alias = null) {
         return $this->join($tableName, $on, $alias, 'inner');
@@ -249,7 +251,7 @@ class BaseSQLBuilder
      * @param array|string $tableName
      * @param string|array $on
      * @param string|null $alias
-     * @return self
+     * @return static
      */
     public function leftJoin($tableName, $on, $alias = null) {
         return $this->join($tableName, $on, $alias, 'left');
@@ -277,7 +279,7 @@ class BaseSQLBuilder
      *
      * For string you need to add "'". Example: 'A' => "'Text'"
      * @param array $params ASDF-tree for SQL where condition
-     * @return self
+     * @return static
      */
     public function where($params = []) {
         $this->_query['where'] = $params;
@@ -288,7 +290,7 @@ class BaseSQLBuilder
      * Adds via AND new where condition
      * @see \SQLBuilder\BaseSQLBuilder::where        See where method for more details
      * @param array $params ASDF-tree for SQL where condition
-     * @return self
+     * @return static
      */
     public function andWhere($params = []) {
         if (!empty($this->_query['where'])) {
@@ -307,7 +309,7 @@ class BaseSQLBuilder
      * Adds via OR new where condition
      * @see \SQLBuilder\BaseSQLBuilder::where        See where method for more details
      * @param array $params ASDF-tree for SQL where condition
-     * @return self
+     * @return static
      */
     public function orWhere($params = []) {
         if (!empty($this->_query['where'])) {
@@ -325,7 +327,7 @@ class BaseSQLBuilder
     /**
      * Sets limit condition for query
      * @param int $limit
-     * @return self
+     * @return static
      */
     public function limit($limit) {
         $this->_query['limit'] = $limit;
@@ -333,14 +335,94 @@ class BaseSQLBuilder
     }
 
     /**
+     * Sets offset condition for query
+     * @param int $offset
+     * @return static
+     */
+    public function offset($offset) {
+        $this->_query['offset'] = $offset;
+        return $this;
+    }
+
+    /**
      * Sets group param state
      * @param string|array $fields
      * @param string $delimiter
-     * @return self
+     * @return static
      */
     public function group($fields, $delimiter = ',') {
-        $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
+        if (is_string($fields)) {
+            $fields = array_map('trim', explode($delimiter, $fields));
+        } elseif(!is_array($fields)) {
+            $fields = [$fields];
+        }
         $this->_query['group'] = $fields;
+        return $this;
+    }
+
+    /**
+     * Sets group by param state
+     * @param string|array $fields
+     * @param string $delimiter
+     * @return static
+     */
+    public function groupby($fields, $delimiter = ',') {
+        return $this->group($fields, $delimiter);
+    }
+
+    /**
+     * Add group by parameters to stored group by statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return static
+     */
+    public function addGroup($fields, $delimiter = ',')
+    {
+        if (!empty($this->_query['group'])) {
+            if (is_string($fields)) {
+                $fields = array_map('trim', explode($delimiter, $fields));
+            } elseif(!is_array($fields)) {
+                $fields = [$fields];
+            }
+            $count = count($this->_query['group']) + count($fields);
+            $this->_query['group'] = array_merge($this->_query['group'], $fields);
+            if (count($this->_query['group']) != $count) {
+                throw new \Exception('Field names conflict!');
+            }
+            return $this;
+        } else {
+            return $this->group($fields, $delimiter);
+        }
+    }
+
+    /**
+     * Add group by parameters to stored group by statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return static
+     */
+    public function addGroupBy($fields, $delimiter = ',')
+    {
+        return $this->addGroup($fields, $delimiter);
+    }
+
+    /**
+     * Sets order param state
+     * @param string|array $fields
+     * @param string $delimiter
+     * @return static
+     */
+    public function order($fields, $delimiter = ',') {
+        if (is_string($fields)) {
+            $fields = array_map('trim', explode($delimiter, $fields));
+        } elseif(!is_array($fields)) {
+            $fields = [$fields];
+        }
+        $this->_query['order'] = $fields;
         return $this;
     }
 
@@ -348,24 +430,94 @@ class BaseSQLBuilder
      * Sets order param state
      * @param string|array $fields
      * @param string $delimiter
-     * @return self
+     * @return static
      */
-    public function order($fields, $delimiter = ',') {
-        $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
-        $this->_query['order'] = $fields;
-        return $this;
+    public function orderBy($fields, $delimiter = ',') {
+        return $this->order($fields, $delimiter);
+    }
+
+    /**
+     * Add order parameters to stored order statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return static
+     */
+    public function addOrder($fields, $delimiter = ',')
+    {
+        if (!empty($this->_query['order'])) {
+            if (is_string($fields)) {
+                $fields = array_map('trim', explode($delimiter, $fields));
+            } elseif(!is_array($fields)) {
+                $fields = [$fields];
+            }
+            $count = count($this->_query['order']) + count($fields);
+            $this->_query['order'] = array_merge($this->_query['order'], $fields);
+            if (count($this->_query['order']) != $count) {
+                throw new \Exception('Field names conflict!');
+            }
+            return $this;
+        } else {
+            return $this->order($fields, $delimiter);
+        }
+    }
+
+    /**
+     * Add order parameters to stored order statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return static
+     */
+    public function addOrderBy($fields, $delimiter = ',')
+    {
+        return $this->addOrder($fields, $delimiter);
     }
 
     /**
      * Sets having param state
      * @param string|array $fields
      * @param string $delimiter
-     * @return self
+     * @return static
      */
-    public function having($fields, $delimiter = ',') {
-        $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
-        $this->_query['order'] = $fields;
+    public function having($fields, $delimiter = ',')
+    {
+        if (is_string($fields)) {
+            $fields = array_map('trim', explode($delimiter, $fields));
+        } elseif(!is_array($fields)) {
+            $fields = [$fields];
+        }
+        $this->_query['having'] = $fields;
         return $this;
+    }
+
+    /**
+     * Add having parameters to stored having statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return static
+     */
+    public function addHaving($fields, $delimiter = ',')
+    {
+        if (!empty($this->_query['having'])) {
+            if (is_string($fields)) {
+                $fields = array_map('trim', explode($delimiter, $fields));
+            } elseif(!is_array($fields)) {
+                $fields = [$fields];
+            }
+            $count = count($this->_query['having']) + count($fields);
+            $this->_query['having'] = array_merge($this->_query['order'], $fields);
+            if (count($this->_query['having']) != $count) {
+                throw new \Exception('Field names conflict!');
+            }
+            return $this;
+        } else {
+            return $this->having($fields, $delimiter);
+        }
     }
 
     /**
@@ -373,10 +525,11 @@ class BaseSQLBuilder
      * @param array|string $str
      * @return string
      */
-    public function _e($str) {
+    public function _e($str)
+    {
         $str = (is_array($str) && isset($str[0])) ? $str[0]: $str;
         return strpbrk($str, '(+-/*=><)') ? $str :
-            (static::$_bec . implode(static::$_bec . '.' . static::$_fec, explode('.', $str)) . static::$_fec) ;
+            (static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec) ;
     }
 
     /**
@@ -384,7 +537,8 @@ class BaseSQLBuilder
      * @param $str
      * @return string
      */
-    public function _w($str) {
+    public function _w($str)
+    {
         return static::$_bec . $str . static::$_fec;
     }
 
@@ -461,26 +615,19 @@ class BaseSQLBuilder
         return implode(",\n", $from);
     }
 
-    public function genJoins() {
-        $query = '';
-        /*if (isset($this->_query['join'])) {
+    public function genJoin() {
+        $joins = [];
+        if (isset($this->_query['join'])) {
             foreach($this->_query['join'] as $join) {
                 $table = $this->_e($join['table']);
-                $query .= "\n" . strtoupper($join['type']) . " JOIN {$table} ";
-                if (is_null($join['alias'])) {
-                    $alias = "{$this->_prefix}{$aliasI}";
-                    ++$aliasI;
-                } else {
-                    $alias = $join['alias'];
-                }
-
-                $tables[$alias] = $join['table'];
-                $on = $this->_buildWhere($join['on'], $this->_query['from']['alias']);
-                $query .= $this->_e($alias) . " ON {$on}";
+                $alias = $this->_e($join['alias']);
+                $alias = ($table != $alias) ? " AS {$alias} " : '';
+                $on = $this->genWhere($join['on'], true);
+                $joins[] = strtoupper($join['type']) . " JOIN {$table}{$alias} ON {$on}";
             }
-        }*/
+        }
 
-        return $query;
+        return implode("\n", $joins);
     }
 
     /**
@@ -489,7 +636,7 @@ class BaseSQLBuilder
      */
     public static function getOperators() {
         $result = array();
-        foreach (self::$_operators as $place => $operators) {
+        foreach (static::$_operators as $place => $operators) {
             foreach ($operators as $name) {
                 $result[strtoupper($name)] = $place;
             }
@@ -505,7 +652,7 @@ class BaseSQLBuilder
      * @throws \Exception
      */
     public function genWhere($where, $first = false) {
-        $operators = self::getOperators();
+        $operators = static::getOperators();
         if ($where instanceof static) {
             $where = '(' . $where->getSQL() . ')';
         } elseif (is_null($where)) {
@@ -552,26 +699,76 @@ class BaseSQLBuilder
                     } elseif (is_string($k) && !is_numeric($k)) {
                         $parts[] = $this->genWhere($k) . " = " . $this->genWhere($v);
                     } else {
-                        die('here');
+                        //todo Is it achievable position
+                        die('Yes this position is achievable');
                         $parts[] = $this->genWhere($v);
                     }
                 }
                 return '(' . implode(" \n\t$operator ", $parts) . ')';
             }
         }
-        return $where;
+        return ($where instanceof BaseExpression) ? $where : $this->_e($where);
     }
 
+    /**
+     * Generate GROUP BY statement
+     * @return string
+     */
     public function genGroupBy() {
-        return '';
+        $group = [];
+        foreach($this->_query['group'] as $expression) {
+            if ($expression instanceof static) {
+                $subQuery = $expression->getSQL();
+                //todo what if subQuery use some table or field of query?
+                /*if (isset($this->_query['from']['alias'])) {
+                    $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
+                }*/
+
+                $group[] = "({$subQuery})";
+
+            } else {
+                $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
+                $group[] = "{$expression}";
+            }
+        }
+        return implode(",\n", $group);
     }
 
+    /**
+     * Generate ORDER BY statement
+     * @return string
+     */
     public function genOrderBy() {
-        return '';
+        $order = [];
+        foreach($this->_query['order'] as $expression) {
+            if ($expression instanceof static) {
+                $subQuery = $expression->getSQL();
+                //todo what if subQuery use some table or field of query?
+                /*if (isset($this->_query['from']['alias'])) {
+                    $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
+                }*/
+
+                $order[] = "({$subQuery})";
+
+            } elseif(is_array($expression) || (is_string($expression) && strstr($expression, ' '))) {
+                $expression = is_string($expression) ? explode(' ', $expression) : $expression;
+                $orderType = end($expression);
+                $expression = reset($expression);
+                $order[] = (($expression instanceof BaseExpression) ? $expression : $this->_e($expression)) . ' ' . $orderType;
+            } else {
+                $order[] = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
+            }
+        }
+        return implode(",\n", $order);
     }
 
+    /**
+     * Generate HAVING statement
+     * @return string
+     * @throws \Exception
+     */
     public function genHaving() {
-        return '';
+        return $this->genWhere($this->_query['having'], true);
     }
 
     /**
@@ -579,13 +776,13 @@ class BaseSQLBuilder
      * @return string
      */
     public function getSQL($level = 1) {
-        $leftOffset = ''; //str_pad('', $level, "\t");
+        $leftOffset = str_pad('', $level, "\t");
         return $leftOffset . 'SELECT ' . $this->genSelect() . "\n" .
             $leftOffset . 'FROM ' . $this->genFrom() . "\n" .
-            //$this->genJoins() . "\n" .
-            (!empty($this->_query['where']) ? ($leftOffset . 'WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') /*.
-            $leftOffset . 'GROUP BY ' . $this->genGroupBy() . "\n" .
-            $leftOffset . 'ORDER BY ' . $this->genOrderBy() . "\n" .
-            $leftOffset . 'HAVING ' . $this->genHaving() . "\n"*/;
+            $leftOffset . $this->genJoin() . "\n" .
+            (!empty($this->_query['where']) ? ($leftOffset . 'WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') .
+            (!empty($this->_query['group']) ? ($leftOffset . 'GROUP BY ' . $this->genGroupBy() . "\n") : '') .
+            (!empty($this->_query['having']) ? ($leftOffset . 'HAVING ' . $this->genHaving() . "\n") : '') .
+            (!empty($this->_query['order']) ? ($leftOffset . 'ORDER BY ' . $this->genOrderBy() . "\n") : '');
     }
 }
