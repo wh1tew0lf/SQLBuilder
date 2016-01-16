@@ -11,4 +11,3 @@ Classes for generate SQL queries (select/insert/update/delete) on different plat
 * Add examples of usage
 * Sub-queries that used main query fields and tables
 * Offset for MSSQL
-* Insert/Update/Delete statements
