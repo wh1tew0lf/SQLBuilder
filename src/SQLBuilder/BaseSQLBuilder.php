@@ -5,10 +5,10 @@
  * Classes for generate SQL queries (select/insert/update/delete) on different platforms (MySQL, MS SQL)
  *
  * @package SQLBuilder
- * @since 1.0
+ * @since Version 1.0
  *
  */
-namespace \SQLBuilder;
+namespace SQLBuilder;
 
 /**
  * BaseSQLBuilder
@@ -17,17 +17,21 @@ namespace \SQLBuilder;
  *
  * @class Base Class for creating SQL Queries
  * @package SQLBuilder
+ * @version 1.0
+ * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
 class BaseSQLBuilder
 {
     /**
      * @var array $_query There will be stored all data of current query
+     * @since 1.0
      */
     protected $_query = [];
 
     /**
      * @var array List of lists of sql operators, key in main list mean count of operands.
+     * @since 1.0
      * For example: "=" and key 2 mean that there are two operands, 3 mean many (>= 1)
      */
     protected static $_operators = [
@@ -39,6 +43,7 @@ class BaseSQLBuilder
             'is',
             '=',
             '!=',
+            '<>',
             '>',
             '<',
             '>=',
@@ -54,16 +59,19 @@ class BaseSQLBuilder
 
     /**
      * @var string Front Escape Character
+     * @since 1.0
      */
-    protected static $_fec = '';
+    protected static $_fec = '}';
 
     /**
      * @var string Front Escape Character
+     * @since 1.0
      */
-    protected static $_bec = '';
+    protected static $_bec = '{';
 
     /**
      * Clear object state for new query
+     * @since 1.0
      * @return self
      */
     public function startQuery()
@@ -74,6 +82,7 @@ class BaseSQLBuilder
 
     /**
      * Start new instance of SQLBuilder
+     * @since 1.0
      * @return BaseSQLBuilder
      */
     public static function start()
@@ -84,19 +93,62 @@ class BaseSQLBuilder
 
     /**
      * Store select statement
+     * @since 1.0
      * @param string|array $fields
      * @param string $delimiter If fields is string delimiter for this string
      * @return self
      */
     public function select($fields, $delimiter = ',')
     {
-        $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
+        if (is_string($fields)) {
+            $fields = array_map('trim', explode($delimiter, $fields));
+        } elseif(!is_array($fields)) {
+            $fields = [$fields];
+        }
         $this->_query['select'] = $fields;
         return $this;
     }
 
     /**
+     * Returns raw select data
+     * @since 1.0
+     * @return mixed
+     */
+    public function getRawSelect()
+    {
+        return isset($this->_query['select']) ? $this->_query['select'] : null;
+    }
+
+    /**
+     * Add select parameters to stored select statement
+     * @since 1.0
+     * @param string|array $fields
+     * @param string $delimiter If fields is string delimiter for this string
+     * @throws \Exception
+     * @return self
+     */
+    public function addSelect($fields, $delimiter = ',')
+    {
+        if (!empty($this->_query['select'])) {
+            if (is_string($fields)) {
+                $fields = array_map('trim', explode($delimiter, $fields));
+            } elseif(!is_array($fields)) {
+                $fields = [$fields];
+            }
+            $count = count($this->_query['select']) + count($fields);
+            $this->_query['select'] = array_merge($this->_query['select'], $fields);
+            if (count($this->_query['select']) != $count) {
+                throw new \Exception('Field names conflict!');
+            }
+            return $this;
+        } else {
+            return $this->select($fields, $delimiter);
+        }
+    }
+
+    /**
      * Parse input for from and joins
+     * @since 1.0
      * @param array|string|self $tableName Array can contain
      * [0] == table, [1] == alias
      * [table] == table, [alias] == alias
@@ -122,6 +174,7 @@ class BaseSQLBuilder
     /**
      * Store from statement
      * @see \SQLBuilder\BaseSQLBuilder::_getTable For $tableName see getTable method
+     * @since 1.0
      * @param array|string|self
      * @param string|null $alias
      * @return self
@@ -134,6 +187,7 @@ class BaseSQLBuilder
     /**
      * Adds join statement
      * @see \SQLBuilder\BaseSQLBuilder::_getTable For $tableName see getTable method
+     * @since 1.0
      * @param array|string $tableName
      * @param string|array $on
      * @param string|null $alias
@@ -157,6 +211,7 @@ class BaseSQLBuilder
      * Adds INNER join statement
      * @see \SQLBuilder\BaseSQLBuilder::_getTable   For $tableName see getTable method
      * @see \SQLBuilder\BaseSQLBuilder::join        See join method for more details
+     * @since 1.0
      * @param array|string $tableName
      * @param string|array $on
      * @param string|null $alias
@@ -278,5 +333,83 @@ class BaseSQLBuilder
         $fields = is_array($fields) ? $fields : array_map('trim', explode($delimiter, $fields));
         $this->_query['order'] = $fields;
         return $this;
+    }
+
+    /**
+     * Escape
+     * @param array|string $str
+     * @return string
+     */
+    public function _e($str) {
+        $str = (is_array($str) && isset($str[0])) ? $str[0]: $str;
+        return strpbrk($str, '(+-/*=><)') ? $str :
+            (static::$_bec . implode(static::$_bec . '.' . static::$_fec, explode('.', $str)) . static::$_fec) ;
+    }
+
+    /**
+     * Wrap
+     * @param $str
+     * @return string
+     */
+    public function _w($str) {
+        return static::$_bec . $str . static::$_fec;
+    }
+
+    /**
+     * Generates string for SELECT
+     * @return string
+     */
+    public function genSelect() {
+        if (empty($this->_query['select'])) {
+            return '*';
+        } else {
+            $select = [];
+            foreach($this->_query['select'] as $alias => $expression) {
+                if (is_array($expression)) {
+                    $tableAlias = $this->_w($alias);
+                    foreach($expression as $fieldAlias => $fieldName) {
+                        $fieldName = $this->_w($fieldName);
+                        if (!is_numeric($fieldAlias)) {
+                            $fieldAlias = ' AS ' . $this->_w($fieldAlias);
+                        } else {
+                            $fieldAlias = '';
+                        }
+                        $select[] = "{$tableAlias}.{$fieldName}{$fieldAlias}";
+                    }
+                } elseif ($expression instanceof static) {
+                    $subQuery = $expression->buildQuery();
+                    //todo what if subQuery use some table or field of query?
+                    /*if (isset($this->_query['from']['alias'])) {
+                        $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
+                    }*/
+
+                    if (!is_numeric($alias)) {
+                        $alias = ' AS ' . $this->_w($alias);
+                    } else {
+                        $alias = '';
+                    }
+
+                    $select[] = "({$subQuery}){$alias}";
+
+                } else {
+                    $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
+                    if (!is_numeric($alias)) {
+                        $alias = ' AS ' . $this->_w($alias);
+                    } else {
+                        $alias = '';
+                    }
+                    $select[] = "{$expression}{$alias}";
+                }
+            }
+            return implode(",\n", $select);
+        }
+    }
+
+    /**
+     * Dummy method
+     * @return string
+     */
+    public function buildQuery() {
+        return 'SELECT ' . $this->genSelect();
     }
 }
