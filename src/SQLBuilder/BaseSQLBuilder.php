@@ -535,7 +535,7 @@ class BaseSQLBuilder
     public function _e($str)
     {
         $str = (is_array($str) && isset($str[0])) ? $str[0]: $str;
-        return strpbrk($str, '(+-/*=><)') ? $str :
+        return strpbrk($str, '(+-/*=><:)') ? $str :
             (static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec) ;
     }
 
@@ -693,22 +693,18 @@ class BaseSQLBuilder
 
                 if (('IN' == $operator) && empty($operand2)) {
                     return '1=0';
-                } elseif (('LIKE' == $operator) && !strstr($operand2, '%')) {
-                    return $this->genWhere($operand1) . " $operator '%{$operand2}%'" ;
                 }
 
                 return $this->genWhere($operand1) . " $operator " . $this->genWhere($operand2);
             } else {
                 $parts = array();
-                foreach ($where as $k => $v) {
-                    if (is_array($v)) {
-                        $parts[] = $this->genWhere($v);
-                    } elseif (is_string($k) && !is_numeric($k)) {
-                        $parts[] = $this->genWhere($k) . " = " . $this->genWhere($v);
+                foreach ($where as $key => $value) {
+                    if (is_array($value)) {
+                        $parts[] = $this->genWhere($value);
+                    } elseif (is_string($key) && !is_numeric($key)) {
+                        $parts[] = $this->genWhere($key) . " = " . $this->genWhere($value);
                     } else {
-                        //todo Is it achievable position
-                        die('Yes this position is achievable');
-                        //$parts[] = $this->genWhere($v);
+                        $parts[] = $this->genWhere($value);
                     }
                 }
                 return '(' . implode(" \n\t$operator ", $parts) . ')';
@@ -793,5 +789,49 @@ class BaseSQLBuilder
             (!empty($this->_query['group']) ? ('GROUP BY ' . $this->genGroupBy() . "\n") : '') .
             (!empty($this->_query['having']) ? ('HAVING ' . $this->genHaving() . "\n") : '') .
             (!empty($this->_query['order']) ? ('ORDER BY ' . $this->genOrderBy() . "\n") : ''));
+    }
+
+    /**
+     * Inserts to table field
+     * @param string $table
+     * @param array $fields
+     * @return boolean
+     */
+    public function insert($table, $fields) {
+        $table = $this->_w($table);
+        $sql = "INSERT INTO {$table} (" . static::$_bec .
+            implode(static::$_fec . ', ' . static::$_bec, array_keys($fields)) .
+            static::$_fec . ') VALUES (' . implode(', ', $fields) . ')';
+        return $sql;
+    }
+
+    /**
+     * Update some table
+     * @param string $table
+     * @param array $fields
+     * @param string $where condition
+     * @return boolean
+     */
+    public function update($table, $fields, $where) {
+        $table = $this->_w($table);
+        $sql = array();
+        foreach($fields as $key => $value) {
+            $sql[] = static::$_bec . $key . static::$_fec . " = $value";
+        }
+        $sql = "UPDATE {$table} SET " . implode(',', $sql) . " WHERE " . $this->genWhere($where, true);
+
+        return $sql;
+    }
+
+    /**
+     * Delete from table by condition
+     * @param string $table
+     * @param string $where condition
+     * @return boolean
+     */
+    public function delete($table, $where) {
+        $table = $this->_w($table);
+        $sql = "DELETE FROM {$table} WHERE " . $this->genWhere($where, true);
+        return $sql;
     }
 }

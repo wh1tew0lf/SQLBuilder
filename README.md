@@ -8,6 +8,5 @@ Classes for generate SQL queries (select/insert/update/delete) on different plat
 `./vendor/bin/phpdoc -d ./src -t ./docs/`
 
 ###To Do section
-* Add examples of usage
 * Sub-queries that used main query fields and tables
 * Offset for MSSQL
