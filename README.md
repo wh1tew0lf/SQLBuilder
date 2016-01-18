@@ -9,5 +9,5 @@ Classes for generate SQL queries (select/insert/update/delete) on different plat
 
 ###To Do section
 * Sub-queries that used main query fields and tables
-* Offset for MSSQL
 * PDO classes
+* Table transfer class from MySQL to MSSQL and from MS to My

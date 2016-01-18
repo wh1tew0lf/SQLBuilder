@@ -11,6 +11,7 @@
 namespace SQLBuilder;
 
 
+
 class MSSQLBuilder extends BaseSQLBuilder
 {
 
@@ -28,6 +29,55 @@ class MSSQLBuilder extends BaseSQLBuilder
      * @inheritdoc
      */
     public function genSelect() {
-        return (isset($this->_query['limit']) ? (' TOP ' . $this->_query['limit'] . ' ') : '') . parent::genSelect();
+        return (!empty($this->_query['limit']) ? (' TOP ' . $this->_query['limit'] . ' ') : '') . parent::genSelect();
+    }
+
+    /**
+     * @override
+     * @inheritdoc
+     */
+    public function getSQL($level = 1) {
+        if (isset($this->_query['offset'])) {
+            $uniqueAlias = uniqid('count_');
+            $select = !empty($this->_query['select']) ? $this->_query['select'] : '*';
+            if (empty($this->_query['order']) && ('*' !== $select)) {
+                $select = [];
+                foreach($this->_query['select'] as $alias => $expression) {
+                    if (is_array($expression)) {
+                        foreach($expression as $fieldName) {
+                            $select[] = "{$alias}.{$fieldName}";
+                        }
+                    } else {
+                        $expression = $expression;
+                        $select[] = $expression;
+                    }
+                }
+                $this->_query['order'] = $select;
+            }
+
+            if (!empty($this->_query['order'])) {
+                $order = $this->genOrderBy();
+
+                if (empty($this->_query['select'])) {
+                    $this->select(['*', $uniqueAlias => new BaseExpression("ROW_NUMBER() OVER(ORDER BY {$order})")]);
+                } else {
+                    $this->addSelect([$uniqueAlias => new BaseExpression("ROW_NUMBER() OVER(ORDER BY {$order})")]);
+                }
+
+                $limit = isset($this->_query['limit']) ? $this->_query['limit'] : null;
+                unset($this->_query['limit']);
+                $offset = $this->_query['offset'];
+                unset($this->_query['offset']);
+                $tableUniqueAlias = uniqid('temp_');
+                unset($this->_query['order']);
+                return static::start()
+                    ->from([$tableUniqueAlias => $this])
+                    ->where(['>', "{$tableUniqueAlias}.{$uniqueAlias}", new BaseExpression($offset)])
+                    ->limit($limit)
+                    ->order($uniqueAlias)
+                    ->getSQL();
+            }
+        }
+        return parent::getSQL($level);
     }
 }

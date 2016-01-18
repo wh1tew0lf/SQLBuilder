@@ -34,6 +34,10 @@ class MySQLBuilder extends BaseSQLBuilder
         return '';
     }
 
+    /**
+     * @override
+     * @inheritdoc
+     */
     public function getSQL($level = 1) {
         return parent::getSQL($level) . $this->genLimitation();
     }
