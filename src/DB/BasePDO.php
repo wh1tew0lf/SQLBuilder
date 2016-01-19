@@ -21,7 +21,7 @@ class BasePDO extends \PDO
 {
 
     /**
-     * @var PDOStatement last statement that runned by this object
+     * @var \PDOStatement last statement that was run by this object
      */
     protected $_lastStatement = null;
 
