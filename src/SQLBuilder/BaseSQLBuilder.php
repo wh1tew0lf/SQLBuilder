@@ -770,16 +770,16 @@ class BaseSQLBuilder
      * Update some table
      * @param string $table
      * @param array $fields
-     * @param string $where condition
+     * @param string|bool $where condition
      * @return boolean
      */
-    public function update($table, $fields, $where) {
+    public function update($table, $fields, $where = false) {
         $table = $this->_wrap($table);
         $sql = array();
         foreach($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
-        $sql = "UPDATE {$table} SET " . implode(',', $sql) . " WHERE " . $this->genWhere($where, true);
+        $sql = "UPDATE {$table} SET " . implode(',', $sql) . ((false === $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
 
         return $sql;
     }
@@ -787,12 +787,12 @@ class BaseSQLBuilder
     /**
      * Delete from table by condition
      * @param string $table
-     * @param string $where condition
+     * @param string|bool $where condition
      * @return boolean
      */
-    public function delete($table, $where) {
+    public function delete($table, $where = false) {
         $table = $this->_wrap($table);
-        $sql = "DELETE FROM {$table} WHERE " . $this->genWhere($where, true);
+        $sql = "DELETE FROM {$table}" . ((false === $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
         return $sql;
     }
 }
