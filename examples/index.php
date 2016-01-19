@@ -1,22 +1,20 @@
 <?php
-require_once './../src/SQLBuilder/BaseSQLBuilder.php';
-require_once './../src/SQLBuilder/MySQLBuilder.php';
-require_once './../src/SQLBuilder/BaseExpression.php';
+require_once './../loader.php';
 
-$pdo = new PDO('mysql:dbname=test;host=localhost', 'root', '1p2h3p4');
+$pdo = \DB\BasePDO::create('mysql:dbname=test;host=localhost', 'root', '1p2h3p4');
 
 $ids = [];
-foreach(['Vasay', 'Petya', 'Nikolay', 'Kolya', 'Masha'] as $fio) {
-    $iSql = \SQLBuilder\MySQLBuilder::start()->insert('author', [
-        'name' => ':name',
-        'birthday' => ':birthday'
-    ]);
-
-    $stmt = $pdo->prepare($iSql);
-    if ($stmt instanceof PDOStatement) {
-        $stmt->bindValue(':name', $fio);
-        $stmt->bindValue(':birthday', date('Y-m-d', time() - rand(1, 500) * 86400));
-        $stmt->execute();
+$iSql = \SQLBuilder\MySQLBuilder::start()->insert('author', [
+    'name' => ':name',
+    'birthday' => ':birthday'
+]);
+$stmt = $pdo->prepare($iSql);
+if ($stmt instanceof PDOStatement) {
+    foreach(['Vasay', 'Petya', 'Nikolay', 'Kolya', 'Masha'] as $fio) {
+        $stmt->execute([
+            ':name' => $fio,
+            ':birthday' => date('Y-m-d', time() - rand(1, 500) * 86400)
+        ]);
         $ids[] = $pdo->lastInsertId();
     }
 }
@@ -73,10 +71,7 @@ $sql = \SQLBuilder\MySQLBuilder::start()
     ->where(['like', 'au.name', ':test'])
     ->getSQL();
 
-$stmt = $pdo->prepare($sql);
-$stmt->bindValue(':test', 'Vasay');
-$stmt->execute();
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$rows = $pdo->execute($sql, [':test' => 'Vasay'])->fetchAll(PDO::FETCH_ASSOC);
 foreach($rows as $row) {
     foreach($row as $value) {
         echo "|$value\t";
