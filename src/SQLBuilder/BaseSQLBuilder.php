@@ -528,25 +528,16 @@ class BaseSQLBuilder
     }
 
     /**
-     * Escape
+     * Add escape symbols to string
      * @param array|string $str
      * @return string
      */
-    public function _e($str)
+    public function _wrap($str)
     {
-        $str = (is_array($str) && isset($str[0])) ? $str[0]: $str;
-        return strpbrk($str, '(+-/*=><:)') ? $str :
-            (static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec) ;
-    }
-
-    /**
-     * Wrap
-     * @param $str
-     * @return string
-     */
-    public function _w($str)
-    {
-        return static::$_bec . $str . static::$_fec;
+        if (is_string($str) && !strpbrk($str, '(+-/*=><:)')) {
+            return  static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec;
+        }
+        return $str;
     }
 
     /**
@@ -560,38 +551,20 @@ class BaseSQLBuilder
             $select = [];
             foreach($this->_query['select'] as $alias => $expression) {
                 if (is_array($expression)) {
-                    $tableAlias = $this->_w($alias);
+                    $tableAlias = $this->_wrap($alias);
                     foreach($expression as $fieldAlias => $fieldName) {
-                        $fieldName = $this->_w($fieldName);
-                        if (!is_numeric($fieldAlias)) {
-                            $fieldAlias = ' AS ' . $this->_w($fieldAlias);
-                        } else {
-                            $fieldAlias = '';
-                        }
+                        $fieldName = $this->_wrap($fieldName);
+                        $fieldAlias = !is_numeric($fieldAlias) ? ' AS ' . $this->_wrap($fieldAlias) : '';
                         $select[] = "{$tableAlias}.{$fieldName}{$fieldAlias}";
                     }
                 } elseif ($expression instanceof static) {
                     $subQuery = $expression->getSQL($this->_level);
-                    //todo what if subQuery use some table or field of query?
-                    /*if (isset($this->_query['from']['alias'])) {
-                        $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
-                    }*/
-
-                    if (!is_numeric($alias)) {
-                        $alias = ' AS ' . $this->_w($alias);
-                    } else {
-                        $alias = '';
-                    }
-
+                    $alias = !is_numeric($alias) ? ' AS ' . $this->_wrap($alias) : '';
                     $select[] = "(\n{$subQuery}){$alias}";
 
                 } else {
-                    $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
-                    if (!is_numeric($alias)) {
-                        $alias = ' AS ' . $this->_w($alias);
-                    } else {
-                        $alias = '';
-                    }
+                    $expression = ($expression instanceof BaseExpression) ? $expression : $this->_wrap($expression);
+                    $alias = !is_numeric($alias) ? ' AS ' . $this->_wrap($alias) : '';
                     $select[] = "{$expression}{$alias}";
                 }
             }
@@ -607,13 +580,13 @@ class BaseSQLBuilder
         $from = [];
         if (!empty($this->_query['from'])) {
             foreach ($this->_query['from'] as $ind => $fromStmt) {
-                $alias = $this->_w($fromStmt['alias']);
+                $alias = $this->_wrap($fromStmt['alias']);
                 if ($fromStmt['table'] instanceof static) {
                     $from[] = "(\n" . $fromStmt['table']->getSQL($this->_level) . ") AS {$alias}";
                 } elseif ($fromStmt['table'] instanceof BaseExpression) {
                     $from[] = '(' . $fromStmt['table'] . ") AS {$alias}";
                 } else {
-                    $table = $this->_w($fromStmt['table']);
+                    $table = $this->_wrap($fromStmt['table']);
                     $from[] = ($table != $alias) ? "{$table} AS {$alias}" : $table;
                 }
             }
@@ -626,8 +599,8 @@ class BaseSQLBuilder
         $joins = [];
         if (isset($this->_query['join'])) {
             foreach($this->_query['join'] as $join) {
-                $table = $this->_e($join['table']);
-                $alias = $this->_e($join['alias']);
+                $table = $this->_wrap($join['table']);
+                $alias = $this->_wrap($join['alias']);
                 $alias = ($table != $alias) ? " AS {$alias} " : '';
                 $on = $this->genWhere($join['on'], true);
                 $joins[] = strtoupper($join['type']) . " JOIN {$table}{$alias} ON {$on}";
@@ -710,7 +683,7 @@ class BaseSQLBuilder
                 return '(' . implode(" \n\t$operator ", $parts) . ')';
             }
         }
-        return ($where instanceof BaseExpression) ? $where : $this->_e($where);
+        return ($where instanceof BaseExpression) ? $where : $this->_wrap($where);
     }
 
     /**
@@ -722,15 +695,9 @@ class BaseSQLBuilder
         foreach($this->_query['group'] as $expression) {
             if ($expression instanceof static) {
                 $subQuery = $expression->getSQL($this->_level);
-                //todo what if subQuery use some table or field of query?
-                /*if (isset($this->_query['from']['alias'])) {
-                    $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
-                }*/
-
                 $group[] = "(\n{$subQuery})";
-
             } else {
-                $expression = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
+                $expression = ($expression instanceof BaseExpression) ? $expression : $this->_wrap($expression);
                 $group[] = "{$expression}";
             }
         }
@@ -746,20 +713,14 @@ class BaseSQLBuilder
         foreach($this->_query['order'] as $expression) {
             if ($expression instanceof static) {
                 $subQuery = $expression->getSQL($this->_level);
-                //todo what if subQuery use some table or field of query?
-                /*if (isset($this->_query['from']['alias'])) {
-                    $subQuery = str_replace('$T$', $this->_query['from']['alias'], $subQuery);
-                }*/
-
                 $order[] = "(\n{$subQuery})";
-
             } elseif(is_array($expression) || (is_string($expression) && strstr($expression, ' '))) {
                 $expression = is_string($expression) ? explode(' ', $expression) : $expression;
                 $orderType = end($expression);
                 $expression = reset($expression);
-                $order[] = (($expression instanceof BaseExpression) ? $expression : $this->_e($expression)) . ' ' . $orderType;
+                $order[] = (($expression instanceof BaseExpression) ? $expression : $this->_wrap($expression)) . ' ' . $orderType;
             } else {
-                $order[] = ($expression instanceof BaseExpression) ? $expression : $this->_e($expression);
+                $order[] = ($expression instanceof BaseExpression) ? $expression : $this->_wrap($expression);
             }
         }
         return implode(",\n", $order);
@@ -798,7 +759,7 @@ class BaseSQLBuilder
      * @return boolean
      */
     public function insert($table, $fields) {
-        $table = $this->_w($table);
+        $table = $this->_wrap($table);
         $sql = "INSERT INTO {$table} (" . static::$_bec .
             implode(static::$_fec . ', ' . static::$_bec, array_keys($fields)) .
             static::$_fec . ') VALUES (' . implode(', ', $fields) . ')';
@@ -813,7 +774,7 @@ class BaseSQLBuilder
      * @return boolean
      */
     public function update($table, $fields, $where) {
-        $table = $this->_w($table);
+        $table = $this->_wrap($table);
         $sql = array();
         foreach($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
@@ -830,7 +791,7 @@ class BaseSQLBuilder
      * @return boolean
      */
     public function delete($table, $where) {
-        $table = $this->_w($table);
+        $table = $this->_wrap($table);
         $sql = "DELETE FROM {$table} WHERE " . $this->genWhere($where, true);
         return $sql;
     }

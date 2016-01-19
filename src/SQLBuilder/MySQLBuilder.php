@@ -10,7 +10,13 @@
  */
 namespace SQLBuilder;
 
-
+/**
+ * Class MySQLBuilder
+ * @package SQLBuilder
+ * @version 1.0
+ * @since 1.0
+ * @author Volkov Danil <vlkv.d.a@gmail.com>
+ */
 class MySQLBuilder extends BaseSQLBuilder
 {
     /**
