@@ -17,7 +17,7 @@ namespace DB;
  * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
-class BasePDO extends \PDO
+abstract class BasePDO extends \PDO
 {
 
     /**
@@ -36,20 +36,49 @@ class BasePDO extends \PDO
 
     /**
      * Creates new instance
-     * @param string $dns
+     * @param string $dsn
      * @param string $username
      * @param string $password
      * @param array $options
      * @return self
      * @throws \Exception
      */
-    public static function create($dns, $username = null, $password = null, $options = null) {
-        $db = new static($dns, $username, $password, array_merge(null === $options ? array() : $options, static::$defaultOptions));
+    public static function create($dsn, $username = null, $password = null, $options = null) {
+        $db = new static($dsn, $username, $password, array_merge(null === $options ? array() : $options, static::$defaultOptions));
         if (!($db instanceof static)) {
-            throw new \Exception("PDO {$dns} not created!");
+            throw new \Exception("PDO {$dsn} not created!");
         }
 
         return $db;
+    }
+
+    public static function resolveClass($dsn) {
+        $classes = [
+            'mysql' => '\DB\MySQLPDO',
+            'mssql' => '\DB\MSSQLPDO',
+        ];
+        
+        $class = explode(':', $dsn);
+        
+        return isset($classes[$class[0]]) ? $classes[$class[0]] : '\DB\MySQLPDO';
+    }
+
+    public static function construct($params) {
+        if (!isset($params['dsn'])) {
+            throw new \Exception("No DSN specified!");
+        }
+        $dsn = $params['dsn'];
+        $username = isset($params['username']) ? $params['username'] : '';
+        $passwd = isset($params['passwd']) ? $params['passwd'] : '';
+
+        $class = isset($params['class']) ? $params['class'] : static::resolveClass($dsn);
+        
+        unset($params['dsn']);
+        unset($params['username']);
+        unset($params['passwd']);
+        unset($params['class']);
+        
+        return $class::create($dsn, $username, $passwd, $params);
     }
 
     /**
@@ -106,5 +135,59 @@ class BasePDO extends \PDO
             throw new \Exception('Transaction does not created!');
         }
     }
+
+    /**
+     * Is this table exists
+     * @param string $tableName
+     * @return boolean
+     */
+    public abstract function isTableExists($tableName);
+
+    /**
+     * Is this table like params
+     * @param string $tableName
+     * @param array $params
+     * @return boolean
+     */
+    public function isTableEqual($tableName, $params) {
+        $sql = "SHOW COLUMNS FROM `{$tableName}`;";
+        $meta = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
+        $columns = [];
+        foreach($meta as $column) {
+            $columns[$column['Field']] = $column;
+        }
+
+        foreach($params['fields'] as $field => $param) {
+            if (!isset($columns[$field]) || ($param['type'] == $columns['Type'])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Drop table
+     * @param string $tableName
+     * @param boolean $ifExists
+     * @return \PDOStatement
+     * @throws \Exception
+     */
+    public function dropTable($tableName, $ifExists = true) {
+        $ifExists = $ifExists ? 'IF EXISTS' : '';
+        $sql = "DROP TABLE {$ifExists} `{$tableName}`;";
+        return $this->execute($sql);
+    }
+
+    /**
+     * Creates new table by params
+     * @param string $tableName
+     * @param array $params
+     * @param boolean $ifNotExists
+     * @return \PDOStatement
+     * @throws \Exception
+     */
+    public abstract function createTable($tableName, $params, $ifNotExists = true);
+
+    public abstract function getColumns($tableName);
 
 }

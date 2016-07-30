@@ -753,7 +753,7 @@ class BaseSQLBuilder
     }
 
     /**
-     * Inserts to table field
+     * Inserts to table fields
      * @param string $table
      * @param array $fields
      * @return boolean
@@ -779,8 +779,27 @@ class BaseSQLBuilder
         foreach($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
-        $sql = "UPDATE {$table} SET " . implode(',', $sql) . ((false === $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
+        $sql = "UPDATE {$table} SET " . implode(',', $sql) . ((false !== $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
 
+        return $sql;
+    }
+
+    /**
+     * Inserts to table fields
+     * @param string $table
+     * @param array $fields
+     * @return boolean
+     */
+    public function insertOnDuplicateUpdate($table, $fields) {
+        $table = $this->_wrap($table);
+        $sql = array();
+        foreach($fields as $key => $value) {
+            $sql[] = static::$_bec . $key . static::$_fec . " = $value";
+        }
+        $sql = "INSERT INTO {$table} (" . static::$_bec .
+            implode(static::$_fec . ', ' . static::$_bec, array_keys($fields)) .
+            static::$_fec . ') VALUES (' . implode(', ', $fields) . ')' .
+            " ON DUPLICATE KEY UPDATE " . implode(',', $sql);
         return $sql;
     }
 
