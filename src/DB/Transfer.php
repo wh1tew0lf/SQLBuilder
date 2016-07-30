@@ -58,34 +58,49 @@ class Transfer {
         return $row;
     }
 
-    public function copy($params) {
-        if (is_array($params)) {
-            foreach ($params as $tableName) {
-                $this->copy($tableName);
+    public function copy($tables, $params = []) {
+        $tables = !is_array($tables) ? [$tables] : $tables;
+        foreach ($tables as $tableName => $tableParams) {
+            if (is_int($tableName) && is_string($tableParams)) {
+                $fromTable = $tableParams;
+                $toTable = $tableParams;
+            } elseif (is_string($tableName) && is_string($tableParams)) {
+                $fromTable = $tableName;
+                $toTable = $tableParams;
+            } elseif (is_int($tableName) && is_array($tableParams) && isset($tableParams['sql'])) {
+                $select = $tableParams['sql'];
+                $fromTable = false;
+                $toTable = $tableParams['table'];
+            } elseif (is_string($tableName) && is_array($tableParams) && !isset($tableParams['sql'])) {
+                $fromTable = $tableName;
+                $toTable = $tableParams['table'];
+            } else {
+                throw new Exception('Incorrect tables');
             }
-        } else {
-            $tableName = $params;
-            if (!$this->fromDB->isTableExists($tableName)) {
+
+            if ((false !== $fromTable) && !$this->fromDB->isTableExists($fromTable)) {
                 throw new Exception('Table doesn\'t exists at first table');
             }
 
-            if ($this->toDB->isTableExists($tableName)) {
+            $select = isset($select) ? $select : $this->fromDB->getSQLBuilder()->from($fromTable);
+
+            if ($this->toDB->isTableExists($toTable)) {
                 ///*if (!$this->toDB->isTableEqual($tableName, $this->fromDB->getColumns($tableName))) {
-                    $this->toDB->dropTable($tableName);
-                    $this->toDB->createTable($tableName, $this->fromDB->getColumns($tableName));
+                    $this->toDB->dropTable($toTable);
+                    $this->toDB->createTable($toTable, $this->fromDB->getColumns($fromTable));
                 //}*/
             } else {
-                $this->toDB->createTable($tableName, $this->fromDB->getColumns($tableName));
+                $this->toDB->createTable($toTable, $this->fromDB->getColumns($fromTable));
             }
 
             $continue = true;
             $offset = 0;
             while ($continue) {
                 $continue = false;
-                if ($rows = $this->fromDB->execute("SELECT * FROM {$tableName} LIMIT {$offset}, {$this->portion}")->fetchAll(BasePDO::FETCH_ASSOC)) {
+                if ($rows = $this->fromDB->execute($select->offset($offset)->getSQL())->fetchAll(BasePDO::FETCH_ASSOC)) {
                     foreach ($rows as $row) {
                         $row = $this->processFields($row);
-                        $insertUpdate = \SQLBuilder\MySQLBuilder::start()->insertOnDuplicateUpdate($tableName, $row);
+                        $insertUpdate = \SQLBuilder\MySQLBuilder::start()->insertOnDuplicateUpdate($toTable, $row);
 
                         if (false === $this->toDB->execute($insertUpdate)) {
                             echo "ERR2\n";
@@ -96,6 +111,8 @@ class Transfer {
                 }
                 $offset += $this->portion;
             }
+
+            unset($select);
         }
     }
 }

@@ -54,4 +54,8 @@ class MSSQLPDO extends BasePDO {
     public function createTable($tableName, $params, $ifNotExists = true) {
         // TODO: Implement isTableExists() method.
     }
+
+    public function getSQLBuilder() {
+        return \SQLBuilder\MSSQLBuilder::start();
+    }
 }

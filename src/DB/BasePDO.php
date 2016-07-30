@@ -203,4 +203,9 @@ abstract class BasePDO extends \PDO
      */
     public abstract function getColumns($tableName);
 
+    /**
+     * @return \SQLBuilder\BaseSQLBuilder
+     */
+    public abstract function getSQLBuilder();
+
 }
