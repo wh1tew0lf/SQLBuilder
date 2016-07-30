@@ -97,17 +97,17 @@ class Transfer {
             $offset = 0;
             while ($continue) {
                 $continue = false;
-                if ($rows = $this->fromDB->execute($select->offset($offset)->getSQL())->fetchAll(BasePDO::FETCH_ASSOC)) {
+                if ($rows = $this->fromDB->execute($select->limit($this->portion)->offset($offset)->getSQL())->fetchAll(BasePDO::FETCH_ASSOC)) {
                     foreach ($rows as $row) {
                         $row = $this->processFields($row);
-                        $insertUpdate = \SQLBuilder\MySQLBuilder::start()->insertOnDuplicateUpdate($toTable, $row);
+                        $insertUpdate = $this->toDB->getSQLBuilder()->insertOnDuplicateUpdate($toTable, $row);
 
                         if (false === $this->toDB->execute($insertUpdate)) {
                             echo "ERR2\n";
                             continue;
                         }
                     }
-                    //$continue = true;
+                    $continue = true;
                 }
                 $offset += $this->portion;
             }
