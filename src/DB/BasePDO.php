@@ -56,6 +56,7 @@ abstract class BasePDO extends \PDO
         $classes = [
             'mysql' => '\DB\MySQLPDO',
             'mssql' => '\DB\MSSQLPDO',
+            'odbc' => '\DB\MSSQLPDO',
         ];
         
         $class = explode(':', $dsn);
@@ -188,6 +189,18 @@ abstract class BasePDO extends \PDO
      */
     public abstract function createTable($tableName, $params, $ifNotExists = true);
 
+    /**
+     * Returns columns in format array(fieldName => array(
+     * <ul><li>type - database type</li>
+     * <li>null - boolean is null</li>
+     * <li>default - string default value if exists</li>
+     * <li>primary - boolean is primary key</li>
+     * <li>key - boolean is key</li>
+     * <li>extra - string some extra data</li></ul>
+     * @param $tableName
+     * @return array
+     * @throws \Exception
+     */
     public abstract function getColumns($tableName);
 
 }

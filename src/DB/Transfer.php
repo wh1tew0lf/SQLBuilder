@@ -92,7 +92,7 @@ class Transfer {
                             continue;
                         }
                     }
-                    $continue = true;
+                    //$continue = true;
                 }
                 $offset += $this->portion;
             }

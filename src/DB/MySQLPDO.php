@@ -29,9 +29,33 @@ class MySQLPDO extends BasePDO {
         return $this->execute($sql)->fetchColumn() == $tableName;
     }
 
+    /**
+     * Returns columns in format array(fieldName => array(
+     * <ul><li>type - database type</li>
+     * <li>null - boolean is null</li>
+     * <li>default - string default value if exists</li>
+     * <li>primary - boolean is primary key</li>
+     * <li>key - boolean is key</li>
+     * <li>extra - string some extra data</li></ul>
+     * @param $tableName
+     * @return array
+     * @throws \Exception
+     */
     public function getColumns($tableName) {
         $sql = "SHOW COLUMNS FROM `{$tableName}`;";
-        return $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
+        $rows = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
+        $columns = array();
+        foreach ($rows as $row) {
+            $columns[$row['Field']] = array(
+                'type' => $row['Type'],
+                'null' => $row['Null'] === 'YES',
+                'default' => $row['Default'],
+                'primary' => $row['Key'] === 'PRI',
+                'key' => !empty($row['Key']),
+                'extra' => $row['Extra'],
+            );
+        }
+        return $columns;
     }
 
     /**
@@ -46,44 +70,35 @@ class MySQLPDO extends BasePDO {
         $ifNotExists = $ifNotExists ? 'IF NOT EXISTS' : '';
         $create = "CREATE TABLE {$ifNotExists} `{$tableName}` (\n";
         $fields = array();
-        foreach($columns as $fieldData) {
-            $fields[] =  "`{$fieldData['Field']}` {$fieldData['Type']} NOT NULL "; // . ($name == $params['primary'] ? 'AUTO_INCREMENT' : '');
+        $primary = null;
+        $keys = array();
+        foreach($columns as $name => $fieldData) {
+            $fieldLine = "`{$name}` {$fieldData['type']} ";
+            if (!empty($fieldData['default'])) {
+                $fieldLine .= 'DEFAULT ' . $this->quote($fieldData['default']);
+            } elseif($fieldData['null']) {
+                $fieldLine .= 'DEFAULT NULL';
+            } else {
+                $fieldLine .= 'NOT NULL';
+            }
+            $fieldLine .= ' ' . $fieldData['extra'];
+            $fields[] = $fieldLine;
+            if ($fieldData['primary']) {
+                $primary = $name;
+            } elseif ($fieldData['key']) {
+                $keys[] = $name;
+            }
         }
         $create .= implode(",\n", $fields) . "\n";
-        /*$create .= "PRIMARY KEY (`{$params['primary']}`)\n";
-        if (!empty($params['keys'])) {
-            foreach($params['keys'] as $key) {
+        if (null !== $primary) {
+            $create .= ",PRIMARY KEY (`{$primary}`)\n";
+        }
+        if (!empty($keys)) {
+            foreach($keys as $key) {
                 $create .= ", KEY `{$key}` (`{$key}`)";
             }
-        }*/
+        }
         $create .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=0;";
-
         return $this->execute($create);
     }
-    /* *
-     * Creates new table by params
-     * @param string $tableName
-     * @param array $params
-     * @param boolean $ifNotExists
-     * @return \PDOStatement
-     * @throws \Exception
-     */
-    /*public function createTable($tableName, $params, $ifNotExists = true) {
-        $ifNotExists = $ifNotExists ? 'IF NOT EXISTS' : '';
-        $create = "CREATE TABLE {$ifNotExists} `{$tableName}` (\n";
-        $fields = array();
-        foreach($params['fields'] as $name => $fieldData) {
-            $fields[] =  "`{$name}` {$fieldData['type']} NOT NULL "; // . ($name == $params['primary'] ? 'AUTO_INCREMENT' : '');
-        }
-        $create .= implode(",\n", $fields) . ",\n";
-        $create .= "PRIMARY KEY (`{$params['primary']}`)\n";
-        if (!empty($params['keys'])) {
-            foreach($params['keys'] as $key) {
-                $create .= ", KEY `{$key}` (`{$key}`)";
-            }
-        }
-        $create .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=0;";
-
-        return $this->execute($create);
-    }*/
 }
