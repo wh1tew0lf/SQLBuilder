@@ -40,8 +40,10 @@ class MySQLBuilder extends BaseSQLBuilder {
     }
 
     /**
+     * Dummy method
      * @override
-     * @inheritdoc
+     * @param int $level Count of tabs at left side
+     * @return string
      */
     public function getSQL($level = 1) {
         return parent::getSQL($level) . $this->genLimitation();

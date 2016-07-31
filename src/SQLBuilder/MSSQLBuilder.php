@@ -29,16 +29,19 @@ class MSSQLBuilder extends BaseSQLBuilder {
     protected static $_fec = ']';
 
     /**
+     * Generates string for SELECT
      * @override
-     * @inheritdoc
+     * @return string
      */
     public function genSelect() {
         return (!empty($this->_query['limit']) ? (' TOP ' . $this->_query['limit'] . ' ') : '') . parent::genSelect();
     }
 
     /**
+     * Dummy method
      * @override
-     * @inheritdoc
+     * @param int $level Count of tabs at left side
+     * @return string
      */
     public function getSQL($level = 1) {
         if (isset($this->_query['offset'])) {

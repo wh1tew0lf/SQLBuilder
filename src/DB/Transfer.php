@@ -21,9 +21,9 @@ use \Exception;
  */
 class Transfer {
 
-    /** @var BasePDO $fromDB */
+    /** @var BasePDO $fromDB database connection for source */
     private $fromDB = null;
-    /** @var BasePDO $toDB */
+    /** @var BasePDO $toDB database connection for destination */
     private $toDB = null;
     /** @var int $portion size of rows for one select */
     private $portion = 100;
@@ -41,6 +41,7 @@ class Transfer {
     private $existsAction = 'rewrite';
 
     /**
+     * Returns current exists action
      * @return string
      */
     public function getExistsAction() {
@@ -48,6 +49,7 @@ class Transfer {
     }
 
     /**
+     * Set exists action, if there will be incorrect action - it will throw exception
      * @param string $existsAction
      * @throws \Exception
      */

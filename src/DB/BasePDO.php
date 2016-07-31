@@ -30,6 +30,7 @@ abstract class BasePDO extends \PDO
     /** Escape char end */
     const ECE = '`';
 
+    /** @var array default options for PDO connection */
     protected static $defaultOptions = [
         self::ATTR_ERRMODE => self::ERRMODE_EXCEPTION,
         self::ATTR_DEFAULT_FETCH_MODE => self::FETCH_ASSOC,
@@ -54,6 +55,11 @@ abstract class BasePDO extends \PDO
         return $db;
     }
 
+    /**
+     * Resolve db class by dsn
+     * @param string $dsn DSN for db access
+     * @return mixed|string
+     */
     public static function resolveClass($dsn) {
         $classes = [
             'mysql' => '\DB\MySQLPDO',
@@ -66,6 +72,15 @@ abstract class BasePDO extends \PDO
         return isset($classes[$class[0]]) ? $classes[$class[0]] : '\DB\MySQLPDO';
     }
 
+    /**
+     * Create new instance for db access by params
+     * @param array $params should contain:
+     * <ul><li>dsn - Access line to db</li>
+     * <li>username - username if needed</li>
+     * <li>passwd - password if needed</li></ul>
+     * @return static
+     * @throws \Exception
+     */
     public static function construct($params) {
         if (!isset($params['dsn'])) {
             throw new \Exception("No DSN specified!");
@@ -201,6 +216,7 @@ abstract class BasePDO extends \PDO
     public abstract function getColumns($tableName);
 
     /**
+     * Returns SQLBuilder class for create query for this db
      * @return \SQLBuilder\BaseSQLBuilder
      */
     public abstract function getSQLBuilder();

@@ -582,6 +582,10 @@ class BaseSQLBuilder {
         return implode(",\n", $from);
     }
 
+    /**
+     * Generates string for all JOINs
+     * @return string
+     */
     public function genJoin() {
         $joins = [];
         if (isset($this->_query['join'])) {
