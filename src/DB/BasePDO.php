@@ -28,11 +28,11 @@ abstract class BasePDO extends \PDO
     const ECB = '`';
     const ECE = '`';
 
-    protected static $defaultOptions = array(
+    protected static $defaultOptions = [
         self::ATTR_ERRMODE => self::ERRMODE_EXCEPTION,
         self::ATTR_DEFAULT_FETCH_MODE => self::FETCH_ASSOC,
         self::ATTR_PERSISTENT => true
-    );
+    ];
 
     /**
      * Creates new instance
@@ -44,7 +44,7 @@ abstract class BasePDO extends \PDO
      * @throws \Exception
      */
     public static function create($dsn, $username = null, $password = null, $options = null) {
-        $db = new static($dsn, $username, $password, array_merge(null === $options ? array() : $options, static::$defaultOptions));
+        $db = new static($dsn, $username, $password, array_merge(null === $options ? [] : $options, static::$defaultOptions));
         if (!($db instanceof static)) {
             throw new \Exception("PDO {$dsn} not created!");
         }
@@ -206,10 +206,47 @@ abstract class BasePDO extends \PDO
     /**
      * Drop table
      * @param string $tableName
-     * @param boolean $ifExists
      * @return \PDOStatement
      * @throws \Exception
      */
     public abstract function truncateTable($tableName);
+
+    /**
+     * Get all columns from table
+     * @param \SQLBuilder\BaseSQLBuilder $sql
+     * @return array
+     */
+    public function extractColumns(&$sql) {
+        $tables = $sql->getTables();
+        $extractedColumns = ['ID' => ['type' => 'int(11)', 'null' => false, 'default' => '', 'primary' => true, 'key' => true, 'extra' => 'auto_increment']];
+        foreach ($tables as $alias => $table) {
+            $columns = $this->getColumns($table);
+            foreach ($columns as $columnName => $columnData) {
+                if ($columnData['primary']) {
+                    $columnData['primary'] = false;
+                    $columnData['extra'] = '';
+                }
+                $extractedColumns["{$alias}_{$columnName}"] = $columnData;
+            }
+        }
+        return $extractedColumns;
+    }
+
+    /**
+     * Get all columns from table
+     * @param \SQLBuilder\BaseSQLBuilder $sql
+     * @return array
+     */
+    public function getSelectAll(&$sql) {
+        $tables = $sql->getTables();
+        $select = [];
+        foreach ($tables as $alias => $table) {
+            $columns = $this->getColumns($table);
+            foreach ($columns as $columnName => $columnData) {
+                $select["{$alias}_{$columnName}"] = "{$alias}.{$columnName}";
+            }
+        }
+        return $select;
+    }
 
 }

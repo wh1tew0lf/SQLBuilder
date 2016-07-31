@@ -599,11 +599,18 @@ class BaseSQLBuilder
         $joins = [];
         if (isset($this->_query['join'])) {
             foreach($this->_query['join'] as $join) {
-                $table = $this->_wrap($join['table']);
                 $alias = $this->_wrap($join['alias']);
-                $alias = ($table != $alias) ? " AS {$alias} " : '';
+                if ($join['table'] instanceof static) {
+                    $joinSQL = "(\n" . $join['table']->getSQL($this->_level) . ") AS {$alias}";
+                } elseif ($join['table'] instanceof BaseExpression) {
+                    $joinSQL = '(' . $join['table'] . ") AS {$alias}";
+                } else {
+                    $table = $this->_wrap($join['table']);
+                    $joinSQL = ($table != $alias) ? "{$table} AS {$alias}" : $table;
+                }
+
                 $on = $this->genWhere($join['on'], true);
-                $joins[] = strtoupper($join['type']) . " JOIN {$table}{$alias} ON {$on}";
+                $joins[] = strtoupper($join['type']) . " JOIN {$joinSQL} ON {$on}";
             }
         }
 
@@ -615,7 +622,7 @@ class BaseSQLBuilder
      * @return array
      */
     public static function getOperators() {
-        $result = array();
+        $result = [];
         foreach (static::$_operators as $place => $operators) {
             foreach ($operators as $name) {
                 $result[strtoupper($name)] = $place;
@@ -670,7 +677,7 @@ class BaseSQLBuilder
 
                 return $this->genWhere($operand1) . " $operator " . $this->genWhere($operand2);
             } else {
-                $parts = array();
+                $parts = [];
                 foreach ($where as $key => $value) {
                     if (is_array($value)) {
                         $parts[] = $this->genWhere($value);
@@ -775,7 +782,7 @@ class BaseSQLBuilder
      */
     public function update($table, $fields, $where = false) {
         $table = $this->_wrap($table);
-        $sql = array();
+        $sql = [];
         foreach($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
@@ -792,7 +799,7 @@ class BaseSQLBuilder
      */
     public function insertOnDuplicateUpdate($table, $fields) {
         $table = $this->_wrap($table);
-        $sql = array();
+        $sql = [];
         foreach($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
@@ -811,7 +818,40 @@ class BaseSQLBuilder
      */
     public function delete($table, $where = false) {
         $table = $this->_wrap($table);
-        $sql = "DELETE FROM {$table}" . ((false === $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
+        $sql = "DELETE FROM {$table}" . ((false !== $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
         return $sql;
     }
+
+    /**
+     * Return all tables that in query with aliases
+     * @return array
+     */
+    public function getTables() {
+        $tables = [];
+        if (!empty($this->_query['from'])) {
+            foreach ($this->_query['from'] as $ind => $fromStmt) {
+                $alias = $fromStmt['alias'];
+                if ($fromStmt['table'] instanceof static) {
+                    //TODO check it and fix if needed
+                    $tables = array_merge($tables, $fromStmt['table']->getTables());
+                } elseif (!($fromStmt['table'] instanceof BaseExpression)) {
+                    $tables[$alias] = $fromStmt['table'];
+                }
+            }
+        }
+        if (isset($this->_query['join'])) {
+            foreach($this->_query['join'] as $join) {
+                $alias = $join['alias'];
+                if ($join['table'] instanceof static) {
+                    //TODO check it and fix if needed
+                    $tables = array_merge($tables, $join['table']->getTables());
+                } elseif (!($join['table'] instanceof BaseExpression)) {
+                    $tables[$alias] = $join['table'];
+                }
+            }
+        }
+
+        return $tables;
+    }
+
 }

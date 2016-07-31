@@ -29,16 +29,16 @@ class MSSQLPDO extends BasePDO {
 
         $columns = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
 
-        $attributes = array();
+        $attributes = [];
         foreach($columns as $info) {
-            $attributes[$info['COLUMN_NAME']] = array(
+            $attributes[$info['COLUMN_NAME']] = [
                 'default' => $info['COLUMN_DEFAULT'],
                 'type' => $info['DATA_TYPE'],
                 'length' => !empty($info['CHARACTER_MAXIMUM_LENGTH']) ?
                     $info['CHARACTER_MAXIMUM_LENGTH'] :
                     (empty($info['NUMERIC_SCALE']) ? $info['NUMERIC_PRECISION'] :
                         "{$info['NUMERIC_PRECISION']}, {$info['NUMERIC_SCALE']}"),
-            );
+            ];
         }
         return $attributes;
     }

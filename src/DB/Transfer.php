@@ -27,13 +27,13 @@ class Transfer {
 
     private $portion = 10;
 
-    private static $availableActions = array(
+    private static $availableActions = [
         'rewrite' => 'rewrite',
         'rewriteOrClear' => 'rewriteOrClear',
         'skip' => 'skip',
         'stop' => 'stop',
         'append' => 'append',
-    );
+    ];
 
     /**
      * What should be done if table exists
@@ -92,7 +92,7 @@ class Transfer {
      * @return array
      */
     private function processFields($row, $columnsMap, $params) {
-        $newRow = array();
+        $newRow = [];
         foreach($row as $name => &$field) {
             if ((false !== $columnsMap) && !isset($columnsMap[$name])) {
                 continue;
@@ -102,7 +102,10 @@ class Transfer {
                 $type = isset($params['sourceColumns'][$name]['type']) ? $params['sourceColumns'][$name]['type'] : false;
                 $field = call_user_func($params['handler'], $name, $type, $field);
             }
-            $newRow[$newName] = $this->toDB->quote($field);
+            $newNames = is_array($newName) ? $newName : [$newName];
+            foreach ($newNames as $newName) {
+                $newRow[$newName] = $this->toDB->quote($field);
+            }
         }
         return $newRow;
     }
@@ -114,35 +117,39 @@ class Transfer {
      * @return mixed
      */
     public function processColumns($columns, $params) {
-        $rules = array('default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist');
-        if (isset($params['fields'])) {
+        $rules = ['default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist'];
+        if (isset($params['fields']) && is_array($params['fields'])) {
             $fieldsRule = isset($params['fields'][0]) && isset($rules[strtolower($params['fields'][0])]) ?
                 $rules[strtolower($params['fields'][0])] : reset($rules);
             unset($params['fields'][0]);
+        } elseif(isset($params['fields']) && is_callable($params['fields'])) {
+            $fieldsRule = $params['fields'];
         }
 
-        if (isset($params['types'])) {
+        if (isset($params['types']) && is_array($params['types'])) {
             $typesRule = isset($params['types'][0]) && isset($rules[strtolower($params['types'][0])]) ?
                 $rules[strtolower($params['types'][0])] : reset($rules);
             unset($params['types'][0]);
         }
 
+        $processedColumns = [];
+        $ind = 0;
         foreach ($columns as $name => $column) {
-            if (isset($fieldsRule)) {
+            if (isset($fieldsRule) && is_callable($fieldsRule)) {
+                if ($result = call_user_func($fieldsRule, $ind, $name, $column)) {
+                    $processedColumns = array_merge($result, $processedColumns);
+                }
+            } elseif (isset($fieldsRule)) {
                 if ('whitelist' === $fieldsRule) {
-                    if (!isset($params['fields'][$name])) {
-                        unset($columns[$name]);
-                    } elseif ($params['fields'][$name] != $name) {
-                        $columns[$params['fields'][$name]] = $columns[$name];
-                        unset($columns[$name]);
+                    if (isset($params['fields'][$name])) {
+                        $processedColumns[$params['fields'][$name]] = $column;
                     }
                 } elseif('blacklist' === $fieldsRule) {
-                    if (in_array($name, $params['fields'])) {
-                        unset($columns[$name]);
+                    if (!in_array($name, $params['fields'])) {
+                        $processedColumns[$params['fields'][$name]] = $column;
                     }
-                } elseif (isset($params['fields'][$name]) && ($params['fields'][$name] != $name)) {
-                    $columns[$params['fields'][$name]] = $columns[$name];
-                    unset($columns[$name]);
+                } elseif (isset($params['fields'][$name])) {
+                    $processedColumns[$params['fields'][$name]] = $column;
                 }
             }
 
@@ -179,9 +186,10 @@ class Transfer {
                     }
                 }
             }
+            ++$ind;
         }
 
-        return $columns;
+        return $processedColumns;
     }
 
     /**
@@ -191,16 +199,18 @@ class Transfer {
      * @return array|false
      */
     public function createColumnsMap($columns, $params) {
-        $columnsMap = array();
+        $columnsMap = [];
 
-        $rules = array('default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist');
-        if (isset($params['fields'])) {
+        $rules = ['default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist'];
+        if (isset($params['fields']) && is_array($params['fields'])) {
             $fieldsRule = isset($params['fields'][0]) && isset($rules[strtolower($params['fields'][0])]) ?
                 $rules[strtolower($params['fields'][0])] : reset($rules);
             unset($params['fields'][0]);
+        } elseif(isset($params['fields']) && is_callable($params['fields'])) {
+            $fieldsRule = $params['fields'];
         }
 
-        if (isset($params['types'])) {
+        if (isset($params['types']) && is_array($params['types'])) {
             $typesRule = isset($params['types'][0]) && isset($rules[strtolower($params['types'][0])]) ?
                 $rules[strtolower($params['types'][0])] : reset($rules);
             unset($params['types'][0]);
@@ -209,8 +219,13 @@ class Transfer {
         if (!isset($fieldsRule) && !isset($typesRule)) {
             return false;
         }
+        $ind = 0;
         foreach ($columns as $name => $column) {
-            if (isset($fieldsRule)) {
+            if (isset($fieldsRule) && is_callable($fieldsRule)) {
+                if ($result = call_user_func($fieldsRule, $ind, $name, $column)) {
+                    $columnsMap[$name] = array_keys($result);
+                }
+            } elseif (isset($fieldsRule)) {
                 if ('whitelist' === $fieldsRule) {
                     if (isset($params['fields'][$name])) {
                         $columnsMap[$name] = $params['fields'][$name];
@@ -249,6 +264,7 @@ class Transfer {
                     }
                 }
             }
+            ++$ind;
         }
 
         return $columnsMap;
@@ -292,9 +308,18 @@ class Transfer {
 
             $useType = !(is_array($tableParams) && isset($tableParams['sql']));
 
-            $sourceColumns = (is_array($tableParams) && isset($tableParams['sql'])) ? $params['columns'] : $this->fromDB->getColumns($fromTable);
+            if ((is_array($tableParams) && isset($tableParams['sql'])) && isset($params['columns'])) {
+                $sourceColumns = $params['columns'];
+            } elseif ((is_array($tableParams) && isset($tableParams['sql'])) && !isset($params['columns'])) {
+                $sourceColumns = $this->fromDB->extractColumns($select);
+                $select->select($this->fromDB->getSelectAll($select));
+            } else {
+                $sourceColumns = $this->fromDB->getColumns($fromTable);
+            }
+
             $columns = $this->processColumns($sourceColumns, $params);
             $columnsMap = $this->createColumnsMap($sourceColumns, $params);
+            //var_dump($columns, $columnsMap); return;
 
             if ($this->toDB->isTableExists($toTable)) {
                 if ('rewrite' == $this->existsAction) {
@@ -323,7 +348,7 @@ class Transfer {
                 $continue = false;
                 if ($rows = $this->fromDB->execute($select->limit($this->portion)->offset($offset)->getSQL())->fetchAll(BasePDO::FETCH_ASSOC)) {
                     foreach ($rows as $row) {
-                        $row = $this->processFields($row, $columnsMap, array_merge($params, array('sourceColumns' => $useType ? $sourceColumns : false)));
+                        $row = $this->processFields($row, $columnsMap, array_merge($params, ['sourceColumns' => $useType ? $sourceColumns : false]));
                         $insertUpdate = $this->toDB->getSQLBuilder()->insertOnDuplicateUpdate($toTable, $row);
 
                         if (false === $this->toDB->execute($insertUpdate)) {

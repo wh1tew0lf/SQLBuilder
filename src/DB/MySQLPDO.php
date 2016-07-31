@@ -44,16 +44,16 @@ class MySQLPDO extends BasePDO {
     public function getColumns($tableName) {
         $sql = "SHOW COLUMNS FROM `{$tableName}`;";
         $rows = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
-        $columns = array();
+        $columns = [];
         foreach ($rows as $row) {
-            $columns[$row['Field']] = array(
+            $columns[$row['Field']] = [
                 'type' => $row['Type'],
                 'null' => $row['Null'] === 'YES',
                 'default' => $row['Default'],
                 'primary' => $row['Key'] === 'PRI',
                 'key' => !empty($row['Key']),
                 'extra' => $row['Extra'],
-            );
+            ];
         }
         return $columns;
     }
@@ -69,9 +69,9 @@ class MySQLPDO extends BasePDO {
     public function createTable($tableName, $columns, $ifNotExists = true) {
         $ifNotExists = $ifNotExists ? 'IF NOT EXISTS' : '';
         $create = "CREATE TABLE {$ifNotExists} `{$tableName}` (\n";
-        $fields = array();
+        $fields = [];
         $primary = null;
-        $keys = array();
+        $keys = [];
         foreach($columns as $name => $fieldData) {
             $fieldLine = "`{$name}` {$fieldData['type']} ";
             if (!empty($fieldData['default'])) {
