@@ -1,37 +1,25 @@
-CREATE DATABASE IF NOT EXISTS `test` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE `test`;
+CREATE DATABASE IF NOT EXISTS `test1` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `test1`;
 
 -- --------------------------------------------------------
-
---
--- Структура таблицы `author`
---
 
 CREATE TABLE IF NOT EXISTS `author` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) CHARACTER SET utf8 NOT NULL,
   `birthday` date NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8_general_ci AUTO_INCREMENT=4 ;
 
 -- --------------------------------------------------------
-
---
--- Структура таблицы `like`
---
 
 CREATE TABLE IF NOT EXISTS `like` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `newsId` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `newsId` (`newsId`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=7 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8_general_ci AUTO_INCREMENT=7 ;
 
 -- --------------------------------------------------------
-
---
--- Структура таблицы `news`
---
 
 CREATE TABLE IF NOT EXISTS `news` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -41,4 +29,9 @@ CREATE TABLE IF NOT EXISTS `news` (
   `date` date NOT NULL,
   PRIMARY KEY (`id`),
   KEY `authorId` (`authorId`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=9 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8_general_ci AUTO_INCREMENT=9 ;
+
+-- --------------------------------------------------------
+
+CREATE DATABASE IF NOT EXISTS `test2` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `test2`;

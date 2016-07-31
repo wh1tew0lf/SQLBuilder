@@ -1,7 +1,7 @@
 <?php
 require_once './../loader.php';
 
-$pdo = \DB\BasePDO::create('mysql:dbname=test;host=localhost', 'root', '1p2h3p4');
+$pdo = \DB\BasePDO::create('mysql:dbname=test;host=localhost', 'root', '');
 
 $ids = [];
 $iSql = \SQLBuilder\MySQLBuilder::start()->insert('author', [
