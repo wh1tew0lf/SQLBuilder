@@ -109,4 +109,10 @@ class MySQLPDO extends BasePDO {
     public function getSQLBuilder() {
         return \SQLBuilder\MySQLBuilder::start();
     }
+
+    public function truncateTable($tableName) {
+        //$sql = "TRUNCATE TABLE `{$tableName}`;";
+        $sql = "DELETE FROM TABLE `{$tableName}` WHERE 1=1;";
+        return $this->execute($sql);
+    }
 }

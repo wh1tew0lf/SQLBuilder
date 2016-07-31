@@ -27,6 +27,39 @@ class Transfer {
 
     private $portion = 10;
 
+    private static $availableActions = array(
+        'rewrite' => 'rewrite',
+        'rewriteOrClear' => 'rewriteOrClear',
+        'skip' => 'skip',
+        'stop' => 'stop',
+        'append' => 'append',
+    );
+
+    /**
+     * What should be done if table exists
+     * @var string
+     */
+    private $existsAction = 'rewrite';
+
+    /**
+     * @return string
+     */
+    public function getExistsAction() {
+        return $this->existsAction;
+    }
+
+    /**
+     * @param string $existsAction
+     * @throws \Exception
+     */
+    public function setExistsAction($existsAction) {
+        if (isset(self::$availableActions[strtolower($existsAction)])) {
+            $this->existsAction = self::$availableActions[strtolower($existsAction)];
+        } else {
+            throw new Exception('Undefined action, action can be ' . implode(',', self::$availableActions));
+        }
+    }
+
     /**
      * Creates new instance
      * @param BasePDO|array $fromDB
@@ -264,9 +297,21 @@ class Transfer {
             $columnsMap = $this->createColumnsMap($sourceColumns, $params);
 
             if ($this->toDB->isTableExists($toTable)) {
-                if (!$this->toDB->isTableEqual($toTable, $columns)) {
+                if ('rewrite' == $this->existsAction) {
                     $this->toDB->dropTable($toTable);
                     $this->toDB->createTable($toTable, $columns);
+                } elseif (('rewriteOrClear' == $this->existsAction) && $this->toDB->isTableEqual($toTable, $columns)) {
+                    $this->toDB->truncateTable($toTable);
+                } elseif (('rewriteOrClear' == $this->existsAction) && !$this->toDB->isTableEqual($toTable, $columns)) {
+                    $this->toDB->dropTable($toTable);
+                    $this->toDB->createTable($toTable, $columns);
+                } elseif ('skip' == $this->existsAction) {
+                    echo "TABLE '{$fromTable}' SKIPPED BECAUSE '{$toTable}' EXISTS!\n";
+                    continue;
+                } elseif ('stop' == $this->existsAction) {
+                    throw new \Exception("TABLE '{$fromTable}' DO STOP BECAUSE '{$toTable}' EXISTS!");
+                } elseif (('append' == $this->existsAction) && $this->toDB->isTableEqual($toTable, $columns)) {
+                    //Do nothing
                 }
             } else {
                 $this->toDB->createTable($toTable, $columns);

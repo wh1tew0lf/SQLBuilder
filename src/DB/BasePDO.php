@@ -203,4 +203,13 @@ abstract class BasePDO extends \PDO
      */
     public abstract function getSQLBuilder();
 
+    /**
+     * Drop table
+     * @param string $tableName
+     * @param boolean $ifExists
+     * @return \PDOStatement
+     * @throws \Exception
+     */
+    public abstract function truncateTable($tableName);
+
 }
