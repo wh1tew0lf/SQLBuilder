@@ -20,10 +20,13 @@ Don't forget install graphViz
 `./vendor/bin/phploc ./src/ > ./docs/phploc_stat.txt`
 
 ###To Do section
+* Check MSSQLPDO class and try transfer with it.
+
+###Can be done, but not necessary
 * Table transfer class from MySQL to MSSQL and from MS to My
 * Transfer from CSV and from MS to MS or My to My
 * Make tests
-* Makes examples
+* Make examples
 
 ###Purposes
 1. Provide tools for automatic copy/move tables from one db/engine to another if there are no access to mysql/mysqldump
