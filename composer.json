@@ -13,6 +13,10 @@
         "php": ">=5.4"
     },
     "require-dev": {
+        "phpmd/phpmd" : "@stable",
+        "phpmetrics/phpmetrics" : "@stable",
+        "sebastian/phpcpd": "*",
+        "phploc/phploc": "*",
         "phpunit/phpunit": "4.7.*",
         "phpdocumentor/phpdocumentor": "2.*"
     },
