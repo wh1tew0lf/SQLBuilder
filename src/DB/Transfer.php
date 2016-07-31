@@ -189,7 +189,7 @@ class Transfer {
             ++$ind;
         }
 
-        return $processedColumns;
+        return array_reverse($processedColumns);
     }
 
     /**
