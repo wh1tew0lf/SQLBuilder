@@ -25,7 +25,9 @@ abstract class BasePDO extends \PDO
      */
     protected $_lastStatement = null;
 
+    /** Escape char begin */
     const ECB = '`';
+    /** Escape char end */
     const ECE = '`';
 
     protected static $defaultOptions = [

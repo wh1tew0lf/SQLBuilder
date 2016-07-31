@@ -17,8 +17,7 @@ namespace SQLBuilder;
  * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
-class MySQLBuilder extends BaseSQLBuilder
-{
+class MySQLBuilder extends BaseSQLBuilder {
     /**
      * @var string Front Escape Character
      */

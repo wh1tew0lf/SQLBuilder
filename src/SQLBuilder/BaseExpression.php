@@ -21,8 +21,7 @@ namespace SQLBuilder;
  * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
-class BaseExpression
-{
+class BaseExpression {
     /**
      * Some value, that should not be escaped
      * @var string

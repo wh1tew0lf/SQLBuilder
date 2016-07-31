@@ -9,6 +9,7 @@
  *
  */
 namespace DB;
+
 use \Exception;
 
 /**
@@ -24,9 +25,10 @@ class Transfer {
     private $fromDB = null;
     /** @var BasePDO $toDB */
     private $toDB = null;
+    /** @var int $portion size of rows for one select */
+    private $portion = 100;
 
-    private $portion = 10;
-
+    /** @var array $availableActions actions that can be as $existsAction field */
     private static $availableActions = [
         'rewrite' => 'rewrite',
         'rewriteOrClear' => 'rewriteOrClear',
@@ -35,10 +37,7 @@ class Transfer {
         'append' => 'append',
     ];
 
-    /**
-     * What should be done if table exists
-     * @var string
-     */
+    /** @var string $existsAction What should be done if table exists */
     private $existsAction = 'rewrite';
 
     /**
@@ -69,18 +68,18 @@ class Transfer {
     public function __construct($fromDB, $toDB) {
         if ($fromDB instanceof BasePDO) {
             $this->fromDB = $fromDB;
-        } elseif(is_array($fromDB)) {
+        } elseif (is_array($fromDB)) {
             $this->fromDB = BasePDO::construct($fromDB);
         } else {
-            throw new \Exception('Incorrect fromDB param!');
+            throw new Exception('Incorrect fromDB param!');
         }
 
         if ($toDB instanceof BasePDO) {
             $this->toDB = $toDB;
-        } elseif(is_array($toDB)) {
+        } elseif (is_array($toDB)) {
             $this->toDB = BasePDO::construct($toDB);
         } else {
-            throw new \Exception('Incorrect toDB param!');
+            throw new Exception('Incorrect toDB param!');
         }
     }
 
@@ -93,18 +92,19 @@ class Transfer {
      */
     private function processFields($row, $columnsMap, $params) {
         $newRow = [];
-        foreach($row as $name => &$field) {
+        foreach ($row as $name => &$field) {
             if ((false !== $columnsMap) && !isset($columnsMap[$name])) {
                 continue;
             }
             $newName = ((false !== $columnsMap) && isset($columnsMap[$name])) ? $columnsMap[$name] : $name;
-            if (isset($params['handler'])) {
-                $type = isset($params['sourceColumns'][$name]['type']) ? $params['sourceColumns'][$name]['type'] : false;
-                $field = call_user_func($params['handler'], $name, $type, $field);
-            }
             $newNames = is_array($newName) ? $newName : [$newName];
             foreach ($newNames as $newName) {
-                $newRow[$newName] = $this->toDB->quote($field);
+                $processedField = $field;
+                if (isset($params['handler'])) {
+                    $type = isset($params['sourceColumns'][$name]['type']) ? $params['sourceColumns'][$name]['type'] : false;
+                    $processedField = call_user_func($params['handler'], $newName, $type, $processedField);
+                }
+                $newRow[$newName] = $this->toDB->quote($processedField);
             }
         }
         return $newRow;
@@ -116,20 +116,25 @@ class Transfer {
      * @param array $params
      * @return mixed
      */
-    public function processColumns($columns, $params) {
-        $rules = ['default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist'];
+    private function processColumns($columns, $params) {
+        $rules = ['default', 'whitelist', 'blacklist'];
+        $rules = array_combine($rules, $rules);
         if (isset($params['fields']) && is_array($params['fields'])) {
-            $fieldsRule = isset($params['fields'][0]) && isset($rules[strtolower($params['fields'][0])]) ?
+            $fieldsRule = (isset($params['fields'][0]) && isset($rules[strtolower($params['fields'][0])])) ?
                 $rules[strtolower($params['fields'][0])] : reset($rules);
             unset($params['fields'][0]);
-        } elseif(isset($params['fields']) && is_callable($params['fields'])) {
+        } elseif (isset($params['fields']) && is_callable($params['fields'])) {
             $fieldsRule = $params['fields'];
         }
 
         if (isset($params['types']) && is_array($params['types'])) {
-            $typesRule = isset($params['types'][0]) && isset($rules[strtolower($params['types'][0])]) ?
+            $typesRule = (isset($params['types'][0]) && isset($rules[strtolower($params['types'][0])])) ?
                 $rules[strtolower($params['types'][0])] : reset($rules);
             unset($params['types'][0]);
+        }
+
+        if (!isset($fieldsRule) && !isset($typesRule)) {
+            return $columns;
         }
 
         $processedColumns = [];
@@ -144,7 +149,7 @@ class Transfer {
                     if (isset($params['fields'][$name])) {
                         $processedColumns[$params['fields'][$name]] = $column;
                     }
-                } elseif('blacklist' === $fieldsRule) {
+                } elseif ('blacklist' === $fieldsRule) {
                     if (!in_array($name, $params['fields'])) {
                         $processedColumns[$params['fields'][$name]] = $column;
                     }
@@ -166,7 +171,7 @@ class Transfer {
                     if (!$found) {
                         unset($columns[$name]);
                     }
-                } elseif('blacklist' === $typesRule) {
+                } elseif ('blacklist' === $typesRule) {
                     $found = false;
                     foreach ($params['types'] as $oldType => $newType) {
                         if (strstr($column['type'], $oldType)) {
@@ -198,15 +203,15 @@ class Transfer {
      * @param array $params
      * @return array|false
      */
-    public function createColumnsMap($columns, $params) {
+    private function createColumnsMap($columns, $params) {
         $columnsMap = [];
-
-        $rules = ['default' => 'default', 'whitelist' => 'whitelist', 'blacklist' => 'blacklist'];
+        $rules = ['default', 'whitelist', 'blacklist'];
+        $rules = array_combine($rules, $rules);
         if (isset($params['fields']) && is_array($params['fields'])) {
             $fieldsRule = isset($params['fields'][0]) && isset($rules[strtolower($params['fields'][0])]) ?
                 $rules[strtolower($params['fields'][0])] : reset($rules);
             unset($params['fields'][0]);
-        } elseif(isset($params['fields']) && is_callable($params['fields'])) {
+        } elseif (isset($params['fields']) && is_callable($params['fields'])) {
             $fieldsRule = $params['fields'];
         }
 
@@ -299,13 +304,10 @@ class Transfer {
             if (is_array($tableParams)) {
                 $params = array_merge($tableParams, $params);
             }
-
             if ((false !== $fromTable) && !$this->fromDB->isTableExists($fromTable)) {
                 throw new Exception('Table doesn\'t exists at first table');
             }
-
             $select = isset($select) ? $select : $this->fromDB->getSQLBuilder()->from($fromTable);
-
             $useType = !(is_array($tableParams) && isset($tableParams['sql']));
 
             if ((is_array($tableParams) && isset($tableParams['sql'])) && isset($params['columns'])) {
@@ -319,7 +321,6 @@ class Transfer {
 
             $columns = $this->processColumns($sourceColumns, $params);
             $columnsMap = $this->createColumnsMap($sourceColumns, $params);
-            //var_dump($columns, $columnsMap); return;
 
             if ($this->toDB->isTableExists($toTable)) {
                 if ('rewrite' == $this->existsAction) {
@@ -352,16 +353,15 @@ class Transfer {
                         $insertUpdate = $this->toDB->getSQLBuilder()->insertOnDuplicateUpdate($toTable, $row);
 
                         if (false === $this->toDB->execute($insertUpdate)) {
-                            echo "ERR2\n";
-                            continue;
+                            throw new Exception('Row can not be inserted');
+                            //continue;
                         }
                     }
                     $continue = true;
                 }
                 $offset += $this->portion;
             }
-
-            unset($select);
+            unset($select); //for next table
         }
     }
 }

@@ -17,8 +17,7 @@ namespace SQLBuilder;
  * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
-class MSSQLBuilder extends BaseSQLBuilder
-{
+class MSSQLBuilder extends BaseSQLBuilder {
 
     /**
      * @var string Front Escape Character
@@ -47,9 +46,9 @@ class MSSQLBuilder extends BaseSQLBuilder
             $select = !empty($this->_query['select']) ? $this->_query['select'] : '*';
             if (empty($this->_query['order']) && ('*' !== $select)) {
                 $select = [];
-                foreach($this->_query['select'] as $alias => $expression) {
+                foreach ($this->_query['select'] as $alias => $expression) {
                     if (is_array($expression)) {
-                        foreach($expression as $fieldName) {
+                        foreach ($expression as $fieldName) {
                             $select[] = "{$alias}.{$fieldName}";
                         }
                     } else {

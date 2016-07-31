@@ -30,7 +30,7 @@ class MSSQLPDO extends BasePDO {
         $columns = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
 
         $attributes = [];
-        foreach($columns as $info) {
+        foreach ($columns as $info) {
             $attributes[$info['COLUMN_NAME']] = [
                 'default' => $info['COLUMN_DEFAULT'],
                 'type' => $info['DATA_TYPE'],

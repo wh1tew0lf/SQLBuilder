@@ -21,8 +21,7 @@ namespace SQLBuilder;
  * @since 1.0
  * @author Volkov Danil <vlkv.d.a@gmail.com>
  */
-class BaseSQLBuilder
-{
+class BaseSQLBuilder {
     /**
      * @var array $_query There will be stored all data of current query
      * @since 1.0
@@ -85,8 +84,7 @@ class BaseSQLBuilder
      * @since 1.0
      * @return static
      */
-    public function startQuery()
-    {
+    public function startQuery() {
         $this->_query = [];
         return $this;
     }
@@ -96,8 +94,7 @@ class BaseSQLBuilder
      * @since 1.0
      * @return BaseSQLBuilder
      */
-    public static function start()
-    {
+    public static function start() {
         $instance = new static;
         return $instance->startQuery();
     }
@@ -109,11 +106,10 @@ class BaseSQLBuilder
      * @param string $delimiter If fields is string delimiter for this string
      * @return static
      */
-    public function select($fields, $delimiter = ',')
-    {
+    public function select($fields, $delimiter = ',') {
         if (is_string($fields)) {
             $fields = array_map('trim', explode($delimiter, $fields));
-        } elseif(!is_array($fields)) {
+        } elseif (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->_query['select'] = $fields;
@@ -125,8 +121,7 @@ class BaseSQLBuilder
      * @since 1.0
      * @return mixed
      */
-    public function getRawSelect()
-    {
+    public function getRawSelect() {
         return isset($this->_query['select']) ? $this->_query['select'] : null;
     }
 
@@ -138,12 +133,11 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addSelect($fields, $delimiter = ',')
-    {
+    public function addSelect($fields, $delimiter = ',') {
         if (!empty($this->_query['select'])) {
             if (is_string($fields)) {
                 $fields = array_map('trim', explode($delimiter, $fields));
-            } elseif(!is_array($fields)) {
+            } elseif (!is_array($fields)) {
                 $fields = [$fields];
             }
             $count = count($this->_query['select']) + count($fields);
@@ -360,7 +354,7 @@ class BaseSQLBuilder
     public function group($fields, $delimiter = ',') {
         if (is_string($fields)) {
             $fields = array_map('trim', explode($delimiter, $fields));
-        } elseif(!is_array($fields)) {
+        } elseif (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->_query['group'] = $fields;
@@ -385,12 +379,11 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addGroup($fields, $delimiter = ',')
-    {
+    public function addGroup($fields, $delimiter = ',') {
         if (!empty($this->_query['group'])) {
             if (is_string($fields)) {
                 $fields = array_map('trim', explode($delimiter, $fields));
-            } elseif(!is_array($fields)) {
+            } elseif (!is_array($fields)) {
                 $fields = [$fields];
             }
             $count = count($this->_query['group']) + count($fields);
@@ -412,8 +405,7 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addGroupBy($fields, $delimiter = ',')
-    {
+    public function addGroupBy($fields, $delimiter = ',') {
         return $this->addGroup($fields, $delimiter);
     }
 
@@ -426,7 +418,7 @@ class BaseSQLBuilder
     public function order($fields, $delimiter = ',') {
         if (is_string($fields)) {
             $fields = array_map('trim', explode($delimiter, $fields));
-        } elseif(!is_array($fields)) {
+        } elseif (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->_query['order'] = $fields;
@@ -451,12 +443,11 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addOrder($fields, $delimiter = ',')
-    {
+    public function addOrder($fields, $delimiter = ',') {
         if (!empty($this->_query['order'])) {
             if (is_string($fields)) {
                 $fields = array_map('trim', explode($delimiter, $fields));
-            } elseif(!is_array($fields)) {
+            } elseif (!is_array($fields)) {
                 $fields = [$fields];
             }
             $count = count($this->_query['order']) + count($fields);
@@ -478,8 +469,7 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addOrderBy($fields, $delimiter = ',')
-    {
+    public function addOrderBy($fields, $delimiter = ',') {
         return $this->addOrder($fields, $delimiter);
     }
 
@@ -489,11 +479,10 @@ class BaseSQLBuilder
      * @param string $delimiter
      * @return static
      */
-    public function having($fields, $delimiter = ',')
-    {
+    public function having($fields, $delimiter = ',') {
         if (is_string($fields)) {
             $fields = array_map('trim', explode($delimiter, $fields));
-        } elseif(!is_array($fields)) {
+        } elseif (!is_array($fields)) {
             $fields = [$fields];
         }
         $this->_query['having'] = $fields;
@@ -508,12 +497,11 @@ class BaseSQLBuilder
      * @throws \Exception
      * @return static
      */
-    public function addHaving($fields, $delimiter = ',')
-    {
+    public function addHaving($fields, $delimiter = ',') {
         if (!empty($this->_query['having'])) {
             if (is_string($fields)) {
                 $fields = array_map('trim', explode($delimiter, $fields));
-            } elseif(!is_array($fields)) {
+            } elseif (!is_array($fields)) {
                 $fields = [$fields];
             }
             $count = count($this->_query['having']) + count($fields);
@@ -532,10 +520,9 @@ class BaseSQLBuilder
      * @param array|string $str
      * @return string
      */
-    public function _wrap($str)
-    {
+    public function _wrap($str) {
         if (is_string($str) && !strpbrk($str, '(+-/*=><:)')) {
-            return  static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec;
+            return static::$_bec . implode(static::$_fec . '.' . static::$_bec, explode('.', $str)) . static::$_fec;
         }
         return $str;
     }
@@ -549,10 +536,10 @@ class BaseSQLBuilder
             return '*';
         } else {
             $select = [];
-            foreach($this->_query['select'] as $alias => $expression) {
+            foreach ($this->_query['select'] as $alias => $expression) {
                 if (is_array($expression)) {
                     $tableAlias = $this->_wrap($alias);
-                    foreach($expression as $fieldAlias => $fieldName) {
+                    foreach ($expression as $fieldAlias => $fieldName) {
                         $fieldName = $this->_wrap($fieldName);
                         $fieldAlias = !is_numeric($fieldAlias) ? ' AS ' . $this->_wrap($fieldAlias) : '';
                         $select[] = "{$tableAlias}.{$fieldName}{$fieldAlias}";
@@ -598,7 +585,7 @@ class BaseSQLBuilder
     public function genJoin() {
         $joins = [];
         if (isset($this->_query['join'])) {
-            foreach($this->_query['join'] as $join) {
+            foreach ($this->_query['join'] as $join) {
                 $alias = $this->_wrap($join['alias']);
                 if ($join['table'] instanceof static) {
                     $joinSQL = "(\n" . $join['table']->getSQL($this->_level) . ") AS {$alias}";
@@ -659,7 +646,7 @@ class BaseSQLBuilder
             if (0 == $operators[$operator]) {
                 return $this->genWhere($where[1]) . " {$operator}";
             } elseif (1 == $operators[$operator]) {
-                return "{$operator} "  . $this->genWhere($where[1]);
+                return "{$operator} " . $this->genWhere($where[1]);
             } elseif ((2 == $operators[$operator])) {
                 if (2 == count($where)) {
                     $operand1 = reset($where);
@@ -699,7 +686,7 @@ class BaseSQLBuilder
      */
     public function genGroupBy() {
         $group = [];
-        foreach($this->_query['group'] as $expression) {
+        foreach ($this->_query['group'] as $expression) {
             if ($expression instanceof static) {
                 $subQuery = $expression->getSQL($this->_level);
                 $group[] = "(\n{$subQuery})";
@@ -717,11 +704,11 @@ class BaseSQLBuilder
      */
     public function genOrderBy() {
         $order = [];
-        foreach($this->_query['order'] as $expression) {
+        foreach ($this->_query['order'] as $expression) {
             if ($expression instanceof static) {
                 $subQuery = $expression->getSQL($this->_level);
                 $order[] = "(\n{$subQuery})";
-            } elseif(is_array($expression) || (is_string($expression) && strstr($expression, ' '))) {
+            } elseif (is_array($expression) || (is_string($expression) && strstr($expression, ' '))) {
                 $expression = is_string($expression) ? explode(' ', $expression) : $expression;
                 $orderType = end($expression);
                 $expression = reset($expression);
@@ -750,8 +737,8 @@ class BaseSQLBuilder
     public function getSQL($level = 0) {
         $this->_level = 1 + $level;
         $leftOffset = str_pad('', $level, "\t");
-        return $leftOffset . str_replace("\n", "\n{$leftOffset}",'SELECT ' . $this->genSelect() . "\n" .
-        'FROM ' . $this->genFrom() . "\n" .
+        return $leftOffset . str_replace("\n", "\n{$leftOffset}", 'SELECT ' . $this->genSelect() . "\n" .
+            'FROM ' . $this->genFrom() . "\n" .
             $this->genJoin() . "\n" .
             (!empty($this->_query['where']) ? ('WHERE ' . $this->genWhere($this->_query['where'], true) . "\n") : '') .
             (!empty($this->_query['group']) ? ('GROUP BY ' . $this->genGroupBy() . "\n") : '') .
@@ -783,7 +770,7 @@ class BaseSQLBuilder
     public function update($table, $fields, $where = false) {
         $table = $this->_wrap($table);
         $sql = [];
-        foreach($fields as $key => $value) {
+        foreach ($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
         $sql = "UPDATE {$table} SET " . implode(',', $sql) . ((false !== $where) ? (" WHERE " . $this->genWhere($where, true)) : '');
@@ -800,7 +787,7 @@ class BaseSQLBuilder
     public function insertOnDuplicateUpdate($table, $fields) {
         $table = $this->_wrap($table);
         $sql = [];
-        foreach($fields as $key => $value) {
+        foreach ($fields as $key => $value) {
             $sql[] = static::$_bec . $key . static::$_fec . " = $value";
         }
         $sql = "INSERT INTO {$table} (" . static::$_bec .
@@ -840,7 +827,7 @@ class BaseSQLBuilder
             }
         }
         if (isset($this->_query['join'])) {
-            foreach($this->_query['join'] as $join) {
+            foreach ($this->_query['join'] as $join) {
                 $alias = $join['alias'];
                 if ($join['table'] instanceof static) {
                     //TODO check it and fix if needed

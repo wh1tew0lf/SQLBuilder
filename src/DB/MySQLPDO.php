@@ -72,11 +72,11 @@ class MySQLPDO extends BasePDO {
         $fields = [];
         $primary = null;
         $keys = [];
-        foreach($columns as $name => $fieldData) {
+        foreach ($columns as $name => $fieldData) {
             $fieldLine = "`{$name}` {$fieldData['type']} ";
             if (!empty($fieldData['default'])) {
                 $fieldLine .= 'DEFAULT ' . $this->quote($fieldData['default']);
-            } elseif($fieldData['null']) {
+            } elseif ($fieldData['null']) {
                 $fieldLine .= 'DEFAULT NULL';
             } else {
                 $fieldLine .= 'NOT NULL';
@@ -94,7 +94,7 @@ class MySQLPDO extends BasePDO {
             $create .= ",PRIMARY KEY (`{$primary}`)\n";
         }
         if (!empty($keys)) {
-            foreach($keys as $key) {
+            foreach ($keys as $key) {
                 $create .= ", KEY `{$key}` (`{$key}`)";
             }
         }
@@ -110,6 +110,11 @@ class MySQLPDO extends BasePDO {
         return \SQLBuilder\MySQLBuilder::start();
     }
 
+    /**
+     * Remove all rows from table, but don't delete table
+     * @param string $tableName
+     * @return \PDOStatement
+     */
     public function truncateTable($tableName) {
         //$sql = "TRUNCATE TABLE `{$tableName}`;";
         $sql = "DELETE FROM TABLE `{$tableName}` WHERE 1=1;";

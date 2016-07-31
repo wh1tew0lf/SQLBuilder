@@ -4,13 +4,13 @@ require_once './../loader.php';
 $localCfg1 = [
     'dsn' => "mysql:host=localhost;dbname=test;charset=utf8",
     'username' => "root",
-    'passwd' => "1p2h3p4",
+    'passwd' => "",
 ];
 
 $localCfg2 = [
     'dsn' => "mysql:host=localhost;dbname=test;charset=utf8",
     'username' => "root",
-    'passwd' => "1p2h3p4",
+    'passwd' => "",
 ];
 
 $transfer = new \DB\Transfer($localCfg1, $localCfg2);
@@ -33,6 +33,9 @@ $transfer->copy([
             return [$name => $data];
         },
         'handler' => function($name, $type, $value) {
+            if ($name == 'annotate') {
+                return trim(mb_substr($value, 0, 200, 'utf8'));
+            }
             if ($name == 'content') {
                 return trim($value);
             }
@@ -58,6 +61,6 @@ $transfer->copy([
         'table' => 'liked_news',
         /*'columns' => [
         'id' => ['type' => 'int(11)', 'null' => false, 'default' => '', 'primary' => true, 'key' => true, 'extra' => 'auto_increment'],
-        ],*/
+        ], //*/
     ]
 ]);
