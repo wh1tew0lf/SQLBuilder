@@ -147,19 +147,14 @@ abstract class BasePDO extends \PDO
     /**
      * Is this table like params
      * @param string $tableName
-     * @param array $params
+     * @param array $columns
      * @return boolean
      */
-    public function isTableEqual($tableName, $params) {
-        $sql = "SHOW COLUMNS FROM `{$tableName}`;";
-        $meta = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
-        $columns = [];
-        foreach($meta as $column) {
-            $columns[$column['Field']] = $column;
-        }
+    public function isTableEqual($tableName, $columns) {
+        $tableColumns = $this->getColumns($tableName);
 
-        foreach($params['fields'] as $field => $param) {
-            if (!isset($columns[$field]) || ($param['type'] == $columns['Type'])) {
+        foreach ($tableColumns as $name => $data) {
+            if (!isset($columns[$name]) || array_diff($data, $columns[$name])) {
                 return false;
             }
         }

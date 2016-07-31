@@ -101,7 +101,11 @@ class MySQLPDO extends BasePDO {
         $create .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=0;";
         return $this->execute($create);
     }
-    
+
+    /**
+     * Returns SQLBuilder for this PDO
+     * @return \SQLBuilder\BaseSQLBuilder
+     */
     public function getSQLBuilder() {
         return \SQLBuilder\MySQLBuilder::start();
     }
