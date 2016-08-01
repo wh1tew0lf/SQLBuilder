@@ -16,7 +16,6 @@ $localCfg2 = [
 $transfer = new \DB\Transfer($localCfg1, $localCfg2);
 $transfer->setExistsAction('rewrite');
 
-
 $transfer->copy([
     'author' => 'author2',
     'news' => [
