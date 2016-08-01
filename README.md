@@ -15,19 +15,19 @@ Run generation of php docs
 ```
 
 ### For get metrics and statistics:
-1. Shows some metrics
+* Shows some metrics
 ```
 ./vendor/bin/phpmetrics --report-html=./docs/metrics.html ./src/
 ```
-2. Shows table of errors, code style problems and etc
+* Shows table of errors, code style problems and etc
 ```
 ./vendor/bin/phpmd ./src/ html codesize,unusedcode,naming --reportfile ./docs/project_size.html
 ```
-3. Shows duplicated code
+* Shows duplicated code
 ```
 ./vendor/bin/phpcpd --progress ./src/ > ./docs/phpcpd_stat.txt
 ```
-4. Shows summary for code
+* Shows summary for code
 ```
 ./vendor/bin/phploc ./src/ > ./docs/phploc_stat.txt
 ```
