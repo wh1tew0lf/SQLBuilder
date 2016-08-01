@@ -24,7 +24,7 @@ Don't forget install graphViz
 
 ###Can be done, but not necessary
 * ~~Table transfer class from MySQL to MSSQL and from MS to My~~
-* Transfer from CSV and from MS to MS or My to My (Am I need to do it?)
+* Transfer from CSV and from MS to MS or My to My (Do I need to do it?)
 * Make tests    (0.5%)
 * Make examples (2%)
 
