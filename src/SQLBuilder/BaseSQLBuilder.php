@@ -92,7 +92,7 @@ class BaseSQLBuilder {
     /**
      * Start new instance of SQLBuilder
      * @since 1.0
-     * @return BaseSQLBuilder
+     * @return static
      */
     public static function start() {
         $instance = new static;

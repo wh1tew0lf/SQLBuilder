@@ -120,7 +120,7 @@ class MySQLPDO extends BasePDO {
 
     /**
      * Returns SQLBuilder for this PDO
-     * @return \SQLBuilder\BaseSQLBuilder
+     * @return \SQLBuilder\MySQLBuilder
      */
     public function getSQLBuilder() {
         return \SQLBuilder\MySQLBuilder::start();

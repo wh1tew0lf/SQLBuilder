@@ -24,6 +24,7 @@ class MSSQLPDO extends BasePDO {
     /** Escape char end */
     const ECE = ']';
 
+    /** @var string $schema MS SQL schema */
     private static $schema = 'dbo';
 
     /**
@@ -37,6 +38,18 @@ class MSSQLPDO extends BasePDO {
         return $this->execute($sql)->fetchColumn() > 0;
     }
 
+    /**
+     * Returns columns in format array(fieldName => array(
+     * <ul><li>type - database type</li>
+     * <li>null - boolean is null</li>
+     * <li>default - string default value if exists</li>
+     * <li>primary - boolean is primary key</li>
+     * <li>key - boolean is key</li>
+     * <li>extra - string some extra data</li></ul>
+     * @param $tableName
+     * @return array
+     * @throws \Exception
+     */
     public function getColumns($tableName) {
         $sql = 'SELECT * FROM INFORMATION_SCHEMA.COLUMNS ' .
             'WHERE TABLE_NAME = N\'' . $tableName . "'";
@@ -118,6 +131,10 @@ class MSSQLPDO extends BasePDO {
         return $this->execute($create);
     }
 
+    /**
+     * Returns SQLBuilder for this PDO
+     * @return \SQLBuilder\MSSQLBuilder
+     */
     public function getSQLBuilder() {
         return \SQLBuilder\MSSQLBuilder::start();
     }
