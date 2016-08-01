@@ -45,7 +45,7 @@ class MSSQLBuilder extends BaseSQLBuilder {
      */
     public function getSQL($level = 1) {
         if (isset($this->_query['offset'])) {
-            $uniqueAlias = uniqid('count_');
+            $uniqueAlias = uniqid('row_number_');
             $select = !empty($this->_query['select']) ? $this->_query['select'] : '*';
             if (empty($this->_query['order']) && ('*' !== $select)) {
                 $select = [];
