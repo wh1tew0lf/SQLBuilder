@@ -46,8 +46,24 @@ class MySQLPDO extends BasePDO {
         $rows = $this->execute($sql)->fetchAll(BasePDO::FETCH_ASSOC);
         $columns = [];
         foreach ($rows as $row) {
+            $size = explode('(', $row['Type']);
+            if (isset($size[1])) {
+                $size = trim($size[1], '()');
+            } else {
+                $size = false;
+            }
+
+            $type = explode('(', $row['Type']);
+            $type = strtoupper($type[0]);
+            if (in_array($type, [
+                'TINYINT', 'SMALLINT', 'MEDIUMINT', 'INT', 'INTEGER', 'BIGINT', 'FLOAT', 'DOUBLE', 'REAL'
+            ])) {
+                $row['Type'] = strtolower($type);
+            }
+
             $columns[$row['Field']] = [
                 'type' => $row['Type'],
+                'size' => $size,
                 'null' => $row['Null'] === 'YES',
                 'default' => $row['Default'],
                 'primary' => $row['Key'] === 'PRI',
@@ -111,13 +127,26 @@ class MySQLPDO extends BasePDO {
     }
 
     /**
+     * Drop table
+     * @param string $tableName
+     * @param boolean $ifExists
+     * @return \PDOStatement
+     * @throws \Exception
+     */
+    public function dropTable($tableName, $ifExists = true) {
+        $ifExists = $ifExists ? 'IF EXISTS' : '';
+        $sql = "DROP TABLE {$ifExists} `{$tableName}`;";
+        return $this->execute($sql);
+    }
+
+    /**
      * Remove all rows from table, but don't delete table
      * @param string $tableName
      * @return \PDOStatement
      */
     public function truncateTable($tableName) {
         //$sql = "TRUNCATE TABLE `{$tableName}`;";
-        $sql = "DELETE FROM TABLE `{$tableName}` WHERE 1=1;";
+        $sql = "DELETE FROM `{$tableName}` WHERE 1=1;";
         return $this->execute($sql);
     }
 }

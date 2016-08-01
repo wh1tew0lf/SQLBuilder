@@ -25,13 +25,11 @@ class Transfer {
     private $fromDB = null;
     /** @var BasePDO $toDB database connection for destination */
     private $toDB = null;
-    /** @var int $portion size of rows for one select */
-    private $portion = 100;
 
     /** @var array $availableActions actions that can be as $existsAction field */
     private static $availableActions = [
         'rewrite' => 'rewrite',
-        'rewriteOrClear' => 'rewriteOrClear',
+        'truncate' => 'truncate',
         'skip' => 'skip',
         'stop' => 'stop',
         'append' => 'append',
@@ -106,7 +104,7 @@ class Transfer {
                     $type = isset($params['sourceColumns'][$name]['type']) ? $params['sourceColumns'][$name]['type'] : false;
                     $processedField = call_user_func($params['handler'], $newName, $type, $processedField);
                 }
-                $newRow[$newName] = $this->toDB->quote($processedField);
+                $newRow[$newName] = $processedField; //(false === $this->toDB->quote($processedField)) ? ($processedField) : $this->toDB->quote($processedField);
             }
         }
         return $newRow;
@@ -328,9 +326,9 @@ class Transfer {
                 if ('rewrite' == $this->existsAction) {
                     $this->toDB->dropTable($toTable);
                     $this->toDB->createTable($toTable, $columns);
-                } elseif (('rewriteOrClear' == $this->existsAction) && $this->toDB->isTableEqual($toTable, $columns)) {
+                } elseif (('truncate' == $this->existsAction) && $this->toDB->isTableEqual($toTable, $columns)) {
                     $this->toDB->truncateTable($toTable);
-                } elseif (('rewriteOrClear' == $this->existsAction) && !$this->toDB->isTableEqual($toTable, $columns)) {
+                } elseif (('truncate' == $this->existsAction) && !$this->toDB->isTableEqual($toTable, $columns)) {
                     $this->toDB->dropTable($toTable);
                     $this->toDB->createTable($toTable, $columns);
                 } elseif ('skip' == $this->existsAction) {
@@ -345,23 +343,33 @@ class Transfer {
                 $this->toDB->createTable($toTable, $columns);
             }
 
-            $continue = true;
-            $offset = 0;
-            while ($continue) {
-                $continue = false;
-                if ($rows = $this->fromDB->execute($select->limit($this->portion)->offset($offset)->getSQL())->fetchAll(BasePDO::FETCH_ASSOC)) {
-                    foreach ($rows as $row) {
-                        $row = $this->processFields($row, $columnsMap, array_merge($params, ['sourceColumns' => $useType ? $sourceColumns : false]));
-                        $insertUpdate = $this->toDB->getSQLBuilder()->insertOnDuplicateUpdate($toTable, $row);
-
-                        if (false === $this->toDB->execute($insertUpdate)) {
-                            throw new Exception('Row can not be inserted');
-                            //continue;
-                        }
-                    }
-                    $continue = true;
+            $cursor = $this->fromDB->execute($select->getSQL());
+            while ($row = $cursor->fetch(BasePDO::FETCH_ASSOC)) {
+                $row = $this->processFields($row, $columnsMap, array_merge($params, ['sourceColumns' => $useType ? $sourceColumns : false]));
+                $sqlBuilder = $this->toDB->getSQLBuilder();
+                if (method_exists($sqlBuilder, 'insertOnDuplicateUpdate')) {
+                    $insertUpdate = $sqlBuilder->insertOnDuplicateUpdate($toTable, array_combine(
+                        array_keys($row),
+                        array_map(function($item) {return ":{$item}"; } , array_keys($row))
+                    ));
+                } else {
+                    $insertUpdate = $sqlBuilder->insert($toTable, array_combine(
+                        array_keys($row),
+                        array_map(function ($item) {
+                            return ":{$item}";
+                        }, array_keys($row))
+                    ));
                 }
-                $offset += $this->portion;
+
+                //try {
+                    if (false === $this->toDB->execute($insertUpdate, $row)) {
+                        throw new Exception('Row can not be inserted');
+                    }/*
+                } catch (\Exception $e) {
+                    echo $insertUpdate;
+                    var_dump($row);
+                    throw $e;
+                }//*/
             }
             unset($select); //for next table
         }

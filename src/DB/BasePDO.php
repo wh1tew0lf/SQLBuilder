@@ -185,11 +185,7 @@ abstract class BasePDO extends \PDO
      * @return \PDOStatement
      * @throws \Exception
      */
-    public function dropTable($tableName, $ifExists = true) {
-        $ifExists = $ifExists ? 'IF EXISTS' : '';
-        $sql = "DROP TABLE {$ifExists} `{$tableName}`;";
-        return $this->execute($sql);
-    }
+    public abstract function dropTable($tableName, $ifExists = true);
 
     /**
      * Creates new table by params
