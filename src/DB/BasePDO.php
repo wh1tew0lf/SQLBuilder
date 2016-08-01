@@ -232,7 +232,8 @@ abstract class BasePDO extends \PDO
      */
     public function extractColumns(&$sql) {
         $tables = $sql->getTables();
-        $extractedColumns = ['ID' => ['type' => 'int(11)', 'null' => false, 'default' => '', 'primary' => true, 'key' => true, 'extra' => 'auto_increment']];
+        $extractedColumns = [];
+        //['ID' => ['type' => 'int', 'null' => false, 'default' => '', 'primary' => true, 'key' => true, 'extra' => 'auto_increment']];
         foreach ($tables as $alias => $table) {
             $columns = $this->getColumns($table);
             foreach ($columns as $columnName => $columnData) {
