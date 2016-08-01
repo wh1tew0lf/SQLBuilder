@@ -566,7 +566,7 @@ class BaseSQLBuilder {
     public function genFrom() {
         $from = [];
         if (!empty($this->_query['from'])) {
-            foreach ($this->_query['from'] as $ind => $fromStmt) {
+            foreach ($this->_query['from'] as $fromStmt) {
                 $alias = $this->_wrap($fromStmt['alias']);
                 if ($fromStmt['table'] instanceof static) {
                     $from[] = "(\n" . $fromStmt['table']->getSQL($this->_level) . ") AS {$alias}";
@@ -801,7 +801,7 @@ class BaseSQLBuilder {
     public function getTables() {
         $tables = [];
         if (!empty($this->_query['from'])) {
-            foreach ($this->_query['from'] as $ind => $fromStmt) {
+            foreach ($this->_query['from'] as $fromStmt) {
                 $alias = $fromStmt['alias'];
                 if ($fromStmt['table'] instanceof static) {
                     //TODO check it and fix if needed

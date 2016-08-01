@@ -98,7 +98,6 @@ class MSSQLPDO extends BasePDO {
         $ifNotExists = $ifNotExists ? "IF OBJECT_ID ('" . self::$schema . ".{$tableName}', 'U') IS NULL\n" : '';
         $create = $ifNotExists . "CREATE TABLE [" . self::$schema . "].[{$tableName}] (\n";
         $fields = [];
-        $primary = null;
         $keys = [];
         foreach ($columns as $name => $fieldData) {
             $fieldData['type'] = stristr($fieldData['type'], 'varchar') ? 'nvarchar' : $fieldData['type']; //use unicode
