@@ -34,6 +34,7 @@ Run generation of php docs
 
 ###To Do section
 * ~~Check MSSQLPDO class and try transfer with it.~~
+* Check compliance of MS SQL and MySQL data types
 
 ###Can be done, but not necessary
 * ~~Table transfer class from MySQL to MSSQL and from MS to My~~
