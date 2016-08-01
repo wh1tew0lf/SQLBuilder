@@ -54,6 +54,9 @@ class MSSQLPDO extends BasePDO {
             if (stristr($info['DATA_TYPE'], 'varchar')) {
                 $info['DATA_TYPE'] = "varchar({$info['CHARACTER_MAXIMUM_LENGTH']})";
             }
+            if (stristr($info['DATA_TYPE'], 'ntext')) {
+                $info['DATA_TYPE'] = "text";
+            }
             $attributes[$info['COLUMN_NAME']] = [
                 'type' => $info['DATA_TYPE'],
                 'default' => $info['COLUMN_DEFAULT'],
@@ -85,7 +88,7 @@ class MSSQLPDO extends BasePDO {
         $primary = null;
         $keys = [];
         foreach ($columns as $name => $fieldData) {
-            $fieldData['type'] = ('varchar' == strtolower($fieldData['type'])) ? 'nvarchar' : $fieldData['type']; //use unicode
+            $fieldData['type'] = stristr($fieldData['type'], 'varchar') ? 'nvarchar' : $fieldData['type']; //use unicode
             $fieldData['type'] = (in_array(strtolower($fieldData['type']), ['text', 'longtext'])) ? 'ntext' : $fieldData['type']; //use unicode
             $fieldLine = "[{$name}] {$fieldData['type']} ";
             if (!empty($fieldData['default'])) {
