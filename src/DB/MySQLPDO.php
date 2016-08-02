@@ -90,7 +90,7 @@ class MySQLPDO extends BasePDO {
         $keys = [];
         foreach ($columns as $name => $fieldData) {
             $fieldLine = "`{$name}` {$fieldData['type']} ";
-            if (!empty($fieldData['default'])) {
+            if (!empty($fieldData['default']) && ('0' !== $fieldData['default'])) {
                 $fieldLine .= 'DEFAULT ' . $this->quote($fieldData['default']);
             } elseif ($fieldData['null']) {
                 $fieldLine .= 'DEFAULT NULL';

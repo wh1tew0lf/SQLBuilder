@@ -107,6 +107,9 @@ abstract class BasePDO extends \PDO
      * @throws \Exception
      */
     public function execute($sql, $params = []) {
+        if ($this->_lastStatement instanceof \PDOStatement) {
+            $this->_lastStatement->closeCursor();
+        }
         $this->_lastStatement = $this->prepare($sql);
         if (!($this->_lastStatement instanceof \PDOStatement)) {
             throw new \Exception("{$this->getErrorMessage()}.\n SQL: {$sql} can not be prepared!");

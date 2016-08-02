@@ -104,7 +104,7 @@ class Transfer {
                     $type = isset($params['sourceColumns'][$name]['type']) ? $params['sourceColumns'][$name]['type'] : false;
                     $processedField = call_user_func($params['handler'], $newName, $type, $processedField);
                 }
-                $newRow[$newName] = $processedField; //(false === $this->toDB->quote($processedField)) ? ($processedField) : $this->toDB->quote($processedField);
+                $newRow[$newName] = $processedField;
             }
         }
         return $newRow;
@@ -350,7 +350,9 @@ class Transfer {
                 if (method_exists($sqlBuilder, 'insertOnDuplicateUpdate')) {
                     $insertUpdate = $sqlBuilder->insertOnDuplicateUpdate($toTable, array_combine(
                         array_keys($row),
-                        array_map(function($item) {return ":{$item}"; } , array_keys($row))
+                        array_map(function ($item) {
+                            return ":{$item}";
+                        }, array_keys($row))
                     ));
                 } else {
                     $insertUpdate = $sqlBuilder->insert($toTable, array_combine(

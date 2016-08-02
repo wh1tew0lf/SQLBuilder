@@ -21,7 +21,7 @@ Run generation of php docs
 ```
 * Shows table of errors, code style problems and etc
 ```
-./vendor/bin/phpmd ./src/ html codesize,unusedcode,naming --reportfile ./docs/project_size.html
+./vendor/bin/phpmd ./src/ html cleancode,codesize,controversial,design,naming,unusedcode --reportfile ./docs/project_size.html
 ```
 * Shows duplicated code
 ```
