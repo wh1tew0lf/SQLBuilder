@@ -1,12 +1,13 @@
 {
-    "name": "wh1tew0lf/SQLBuilder",
+    "name": "wh1tew0lf/sqlbuilder",
     "description": "Classes for generate SQL queries (select/insert/update/delete) on different platforms (MySQL, MS SQL)",
     "keywords": ["php", "sql", "code generation", "sql builder"],
     "type": "project",
     "license": "MIT",
     "authors": [
         {
-            "name": "Danil Volkov"
+            "name": "Danil Volkov",
+            "email": "vlkv.d.a@gmail.com"
         }
     ],
     "require": {
@@ -22,7 +23,6 @@
     },
     "autoload": {
         "psr-4": {
-            "obfuscationTest\\": "test/",
             "wh1tew0lf\\": ""
         }
     },
