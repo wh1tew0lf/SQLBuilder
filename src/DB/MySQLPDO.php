@@ -8,7 +8,7 @@
  * @since Version 1.0
  *
  */
-namespace DB;
+namespace wh1tew0lf\DB;
 
 /**
  * Class MySQLPDO
@@ -120,10 +120,10 @@ class MySQLPDO extends BasePDO {
 
     /**
      * Returns SQLBuilder for this PDO
-     * @return \SQLBuilder\MySQLBuilder
+     * @return \wh1tew0lf\SQLBuilder\MySQLBuilder
      */
     public function getSQLBuilder() {
-        return \SQLBuilder\MySQLBuilder::start();
+        return \wh1tew0lf\SQLBuilder\MySQLBuilder::start();
     }
 
     /**

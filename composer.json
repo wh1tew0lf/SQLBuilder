@@ -22,7 +22,8 @@
     },
     "autoload": {
         "psr-4": {
-            "obfuscationTest\\": "test/"
+            "obfuscationTest\\": "test/",
+            "wh1tew0lf\\": ""
         }
     },
     "scripts": {

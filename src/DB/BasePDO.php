@@ -8,7 +8,7 @@
  * @since Version 1.0
  *
  */
-namespace DB;
+namespace wh1tew0lf\DB;
 
 /**
  * Class BasePDO
@@ -59,17 +59,21 @@ abstract class BasePDO extends \PDO
      * Resolve db class by dsn
      * @param string $dsn DSN for db access
      * @return mixed|string
+     * @throws \Exception
      */
     public static function resolveClass($dsn) {
         $classes = [
-            'mysql' => '\DB\MySQLPDO',
-            'mssql' => '\DB\MSSQLPDO',
-            'odbc' => '\DB\MSSQLPDO',
+            'mysql' => '\wh1tew0lf\DB\MySQLPDO',
+            'mssql' => '\wh1tew0lf\DB\MSSQLPDO',
+            'odbc' => '\wh1tew0lf\DB\MSSQLPDO',
         ];
         
         $class = explode(':', $dsn);
-        
-        return isset($classes[$class[0]]) ? $classes[$class[0]] : '\DB\MySQLPDO';
+
+        if (!isset($classes[$class[0]])) {
+            throw new \Exception('Unsupported dsn');
+        }
+        return $classes[$class[0]];
     }
 
     /**

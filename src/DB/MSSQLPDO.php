@@ -8,7 +8,7 @@
  * @since Version 1.0
  *
  */
-namespace DB;
+namespace wh1tew0lf\DB;
 
 /**
  * Class MSSQLPDO
@@ -132,10 +132,10 @@ class MSSQLPDO extends BasePDO {
 
     /**
      * Returns SQLBuilder for this PDO
-     * @return \SQLBuilder\MSSQLBuilder
+     * @return \wh1tew0lf\SQLBuilder\MSSQLBuilder
      */
     public function getSQLBuilder() {
-        return \SQLBuilder\MSSQLBuilder::start();
+        return \wh1tew0lf\SQLBuilder\MSSQLBuilder::start();
     }
 
     /**

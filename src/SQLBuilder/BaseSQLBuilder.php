@@ -8,7 +8,7 @@
  * @since Version 1.0
  *
  */
-namespace SQLBuilder;
+namespace wh1tew0lf\SQLBuilder;
 
 /**
  * BaseSQLBuilder

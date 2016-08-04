@@ -4,11 +4,11 @@
  *
  * Classes for work with database
  *
- * @package DB
+ * @package wh1tew0lf\DB
  * @since Version 1.0
  *
  */
-namespace DB;
+namespace wh1tew0lf\DB;
 
 use \Exception;
 
