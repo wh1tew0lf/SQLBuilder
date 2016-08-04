@@ -1,5 +1,5 @@
 <?php
-require_once './../loader.php';
+require './../vendor/autoload.php';
 
 $localCfg1 = [
     'dsn' => "mysql:host=localhost;dbname=test;charset=utf8",
@@ -13,7 +13,7 @@ $localCfg2 = [
     'passwd' => "",
 ];
 
-$transfer = new \DB\Transfer($localCfg1, $localCfg2);
+$transfer = new \wh1tew0lf\DB\Transfer($localCfg1, $localCfg2);
 $transfer->setExistsAction('rewrite');
 
 $transfer->copy([
@@ -54,7 +54,7 @@ $transfer->copy([
         ]
     ],
     [
-        'sql' => \SQLBuilder\MySQLBuilder::start()
+        'sql' => \wh1tew0lf\SQLBuilder\MySQLBuilder::start()
             ->from('news', 'n')
             ->innerJoin('like', ['l.newsId'=>'n.id'], 'l'),
         'table' => 'liked_news',

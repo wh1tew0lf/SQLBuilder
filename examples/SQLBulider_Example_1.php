@@ -1,10 +1,10 @@
 <?php
-require_once './../loader.php';
+require './../vendor/autoload.php';
 
-$pdo = \DB\BasePDO::create('mysql:dbname=test;host=localhost', 'root', '');
+$pdo = \wh1tew0lf\DB\BasePDO::create('mysql:dbname=test;host=localhost', 'root', '');
 
 $ids = [];
-$iSql = \SQLBuilder\MySQLBuilder::start()->insert('author', [
+$iSql = \wh1tew0lf\SQLBuilder\MySQLBuilder::start()->insert('author', [
     'name' => ':name',
     'birthday' => ':birthday'
 ]);
@@ -27,7 +27,7 @@ foreach([
     'fourth' => 'o blinded by desire, that they cannot foresee the pain and trouble that are bound to ensue; and equal blame belongs to those who fail in their duty through weakness of will, which is the same as saying through shrinking from toil and pain. These cases are perfectly simple and easy to distinguish. In a',
 ] as $title => $content) {
 
-    $iSql = \SQLBuilder\MySQLBuilder::start()->insert('news', [
+    $iSql = \wh1tew0lf\SQLBuilder\MySQLBuilder::start()->insert('news', [
         'authorId' => ':authorId',
         'title' => ':title',
         'content' => ':content',
@@ -46,7 +46,7 @@ foreach([
 }
 
 foreach($newsIds as $id) {
-    $iSql = \SQLBuilder\MySQLBuilder::start()->insert('like', [
+    $iSql = \wh1tew0lf\SQLBuilder\MySQLBuilder::start()->insert('like', [
         'newsId' => ':newsId',
     ]);
 
@@ -59,10 +59,10 @@ foreach($newsIds as $id) {
     }
 }
 
-$sql = \SQLBuilder\MySQLBuilder::start()
+$sql = \wh1tew0lf\SQLBuilder\MySQLBuilder::start()
     ->select(['au.id', 'au.name', 'news.title', 'cnt' =>
-        \SQLBuilder\MySQLBuilder::start()
-            ->select(new \SQLBuilder\BaseExpression('count(*)'))
+        \wh1tew0lf\SQLBuilder\MySQLBuilder::start()
+            ->select(new \wh1tew0lf\SQLBuilder\BaseExpression('count(*)'))
             ->from('like', 'l')
             ->where(['l.newsId' => 'news.id'])
     ])
