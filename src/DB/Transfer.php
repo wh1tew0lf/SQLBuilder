@@ -305,7 +305,7 @@ class Transfer {
                 $params = array_merge($tableParams, $params);
             }
             if ((false !== $fromTable) && !$this->fromDB->isTableExists($fromTable)) {
-                throw new Exception('Table doesn\'t exists at first table');
+                throw new Exception('Table does not exists at first table');
             }
             $select = isset($select) ? $select : $this->fromDB->getSQLBuilder()->from($fromTable);
             $useType = !(is_array($tableParams) && isset($tableParams['sql']));

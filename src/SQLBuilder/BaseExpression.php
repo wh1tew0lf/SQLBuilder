@@ -52,14 +52,4 @@ class BaseExpression {
     public static function c($value) {
         return new static($value);
     }
-
-    /*public static function str($str) {
-        $str = iconv('utf-8', 'windows-1251//IGNORE', str_replace(array("'", '\\'), array('"',''), $str));
-        return new self("'{$str}'");
-    }
-
-    public static function like($str) {
-        $str = iconv('utf-8', 'windows-1251//IGNORE', str_replace(array("'", '\\'), array('"',''), $str));
-        return new self("'%{$str}%'");
-    }*/
 }

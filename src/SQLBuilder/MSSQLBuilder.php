@@ -55,7 +55,6 @@ class MSSQLBuilder extends BaseSQLBuilder {
                             $select[] = "{$alias}.{$fieldName}";
                         }
                     } else {
-                        $expression = $expression;
                         $select[] = $expression;
                     }
                 }

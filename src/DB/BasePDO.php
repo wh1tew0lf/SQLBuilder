@@ -220,7 +220,7 @@ abstract class BasePDO extends \PDO
 
     /**
      * Returns SQLBuilder class for create query for this db
-     * @return \SQLBuilder\BaseSQLBuilder
+     * @return \wh1tew0lf\SQLBuilder\BaseSQLBuilder
      */
     public abstract function getSQLBuilder();
 
@@ -234,7 +234,7 @@ abstract class BasePDO extends \PDO
 
     /**
      * Get all columns from table
-     * @param \SQLBuilder\BaseSQLBuilder $sql
+     * @param \wh1tew0lf\SQLBuilder\BaseSQLBuilder $sql
      * @return array
      */
     public function extractColumns(&$sql) {
@@ -256,7 +256,7 @@ abstract class BasePDO extends \PDO
 
     /**
      * Get all columns from table
-     * @param \SQLBuilder\BaseSQLBuilder $sql
+     * @param \wh1tew0lf\SQLBuilder\BaseSQLBuilder $sql
      * @return array
      */
     public function getSelectAll(&$sql) {
